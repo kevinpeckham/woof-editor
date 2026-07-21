@@ -1,0 +1,59 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": {
+					"level": "on"
+				},
+				"useSortedKeys": "on"
+			}
+		}
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": [
+			"**",
+			"!**/dist",
+			"!**/.svelte-kit",
+			"!**/node_modules",
+			"!**/storybook-static",
+			"!**/coverage"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 100
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"style": {
+				"noNonNullAssertion": "warn",
+				"useConst": "error"
+			},
+			"suspicious": {
+				"noExplicitAny": "off"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"assist": {
+				"actions": {
+					"source": {
+						"useSortedKeys": "off"
+					}
+				}
+			},
+			"includes": ["package.json"]
+		}
+	]
+}

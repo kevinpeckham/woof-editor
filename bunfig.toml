@@ -1,0 +1,3 @@
+# bun doesn't need to auto-load .env — this package has no runtime env,
+# only optional local dev secrets for future features (screenshots, etc.).
+[install]

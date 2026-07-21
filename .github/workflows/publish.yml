@@ -1,0 +1,43 @@
+name: publish
+
+# Tag-driven publish. To ship a release:
+#   1. Update CHANGELOG.md, bump `version` in package.json
+#   2. Commit + push to main
+#   3. Tag matching semver: `git tag v0.1.0 && git push --tags`
+# Workflow builds, runs all checks/tests, and publishes to npm.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Verify (typecheck + biome + tests + build)
+        run: |
+          bun run check
+          bunx biome ci .
+          bun run test
+          bun run build
+      - name: npm publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

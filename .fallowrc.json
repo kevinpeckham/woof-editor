@@ -1,0 +1,25 @@
+{
+	"$schema": "https://raw.githubusercontent.com/fallow-org/fallow/main/schema.json",
+	"entry": [
+		"src/lib/index.ts",
+		"src/lib/**/*.svelte",
+		"src/routes/**/+*.{ts,svelte}",
+		"stories/**/*.stories.svelte",
+		"vite.config.ts",
+		"svelte.config.js",
+		".storybook/main.ts",
+		".storybook/preview.ts"
+	],
+	"health": {
+		"maxCrap": 40
+	},
+	"ignoreDependencies": [
+		"@storybook/addon-a11y",
+		"@storybook/addon-docs",
+		"@storybook/addon-svelte-csf",
+		"@storybook/addon-vitest",
+		"@vitest/browser-playwright",
+		"playwright",
+		"publint"
+	]
+}
