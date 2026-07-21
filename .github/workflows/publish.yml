@@ -4,13 +4,21 @@ name: publish
 #   1. Update CHANGELOG.md, bump `version` in package.json
 #   2. Commit + push to main
 #   3. Tag matching semver: `git tag v0.1.0 && git push --tags`
-# Workflow builds, runs all checks/tests, and publishes to npm.
+# Workflow builds, runs all checks/tests, and publishes to npm using
+# npm's OIDC-based Trusted Publisher flow — GitHub Actions mints a
+# short-lived OIDC token that npm validates against the pre-registered
+# publisher config (see https://www.npmjs.com/package/@kevinpeckham/woof-editor/access).
+# No long-lived NPM_TOKEN needed. The published package also gets
+# provenance attestation (SLSA-style — ties the tarball to this exact
+# commit + workflow run).
 
 on:
   push:
     tags:
       - "v*"
 
+# id-token: write is required for OIDC (npm mints a trust cert from it).
+# contents: read for actions/checkout.
 permissions:
   contents: read
   id-token: write
@@ -38,6 +46,10 @@ jobs:
           bun run test
           bun run build
       - name: npm publish
+        # OIDC + provenance. No NPM_TOKEN — npm validates the OIDC
+        # identity token GitHub Actions injects here against the
+        # trusted-publisher config on npm.com.
+        #
         # Prereleases (any version containing "-") ship under the `alpha`
         # dist-tag so `npm i @kevinpeckham/woof-editor` (no version spec)
         # doesn't inadvertently pull an unstable release. Consumers
@@ -47,11 +59,9 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           if [[ "$VERSION" == *-* ]]; then
-            echo "Publishing prerelease $VERSION under dist-tag: alpha"
-            npm publish --access public --tag alpha
+            echo "Publishing prerelease $VERSION under dist-tag: alpha (OIDC + provenance)"
+            npm publish --provenance --access public --tag alpha
           else
-            echo "Publishing stable $VERSION under dist-tag: latest"
-            npm publish --access public
+            echo "Publishing stable $VERSION under dist-tag: latest (OIDC + provenance)"
+            npm publish --provenance --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
