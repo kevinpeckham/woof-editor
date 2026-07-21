@@ -38,6 +38,20 @@ jobs:
           bun run test
           bun run build
       - name: npm publish
-        run: npm publish --access public
+        # Prereleases (any version containing "-") ship under the `alpha`
+        # dist-tag so `npm i @kevinpeckham/woof-editor` (no version spec)
+        # doesn't inadvertently pull an unstable release. Consumers
+        # opting into prereleases install with
+        # `npm i @kevinpeckham/woof-editor@alpha`. Stable versions
+        # (0.1.0, 1.0.0, etc.) publish to the default `latest` tag.
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then
+            echo "Publishing prerelease $VERSION under dist-tag: alpha"
+            npm publish --access public --tag alpha
+          else
+            echo "Publishing stable $VERSION under dist-tag: latest"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
