@@ -4,6 +4,28 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] — 2026-07-21 — E2: DOM primitives
+
+Real code lands. Ports the ~779-line `blogWysiwygActions.ts` module from `lightning-jar/replicator` into this package as `src/lib/actions/dom.ts`, with the full test suite ported to vitest + happy-dom. Zero framework dependencies; consumers who want to build custom toolbar buttons or automations can import the primitives directly.
+
+### Added
+
+- **`src/lib/actions/dom.ts`** — 22 exported functions + 1 constant, all pure DOM operations on a contenteditable-root + block pair:
+  - **Block navigation:** `findNearestBlock`
+  - **Block editing:** `changeBlockType`, `toggleBlockWrap`, `removeBlock`, `insertParagraph`, `CONVERTIBLE_TAGS_LIST`
+  - **Heading detection:** `isHeadingBlock`
+  - **Title conventions:** `firstH1`, `isFirstH1` (renamed from Replicator's `firstBlogTitleH1` / `isBlogTitleH1` — generic naming for the first-h1-as-article-title pattern)
+  - **Caret:** `placeCaretAtStart`
+  - **Footnotes:** `findFootnoteRef`, `findFootnoteDefinition`, `parseFootnoteNum`, `removeFootnote`, `pruneOrphanFootnotes`, `getFootnoteText`, `setFootnoteText`, `insertFootnote` — round-trips through marked-footnote's canonical GFM shape (`<sup><a id="footnote-ref-N">…</a></sup>` + `<li id="footnote-N">…</li>`) and the legacy attribute-on-sup shape
+  - **Inline formatting:** `toggleInlineEmphasisOnSelection` (strong/em/del), `insertPlainTextAtSelection`, `applyLinkToSelection`, `removeLinkFromSelection` — replace deprecated `execCommand("bold"|"italic"|"insertText"|"createLink")` with real semantic tags
+- All 22 functions re-exported from `src/lib/index.ts` — advanced consumers can bypass the WYSIWYG surface entirely.
+- **`src/lib/actions/dom.test.ts`** — 30 tests, ported from Replicator's `tests/lib/utils/blogWysiwygActions.test.ts`. Uses per-file `@vitest-environment happy-dom` marker so the rest of the node vitest project keeps running in pure node env.
+- New devDep: `happy-dom ^20.11.0` (matches template pin).
+
+### Changed
+
+- **Renamed from Replicator's blog-specific names:** `firstBlogTitleH1` → `firstH1`; `isBlogTitleH1` → `isFirstH1`. Semantics unchanged (first direct-child H1 in the container = article title). Docs genericized to drop blog-editor-specific references.
+
 ## [0.1.0-alpha.1] — 2026-07-21 — OIDC publish
 
 Same package contents as `0.1.0-alpha.0` — this release exists solely to smoke-test the new publish path.
