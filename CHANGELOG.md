@@ -4,6 +4,35 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-07-21 — First stable release
+
+Marks the API stable at 0.1.x — no breaking changes will land in patch versions. Adds Storybook stories, a full README with consumer walkthrough, and promotes the package from the `alpha` dist-tag to `latest` on npm.
+
+Contents unchanged from `0.1.0-alpha.3` — no code changes. The alpha ran through: E1 (scaffold), E2 (DOM primitives), E3 (WYSIWYG surface + menus). Consumer-visible API:
+
+- `<MarkdownEditor {editor} />`
+- `new MarkdownEditorState({ markdown })` with `hasEdits`, `canUndo`, `canRedo`, `pushHistory()`, `undo()`, `redo()`, `hydrateMarkdown()`, `markAsSaved()`, `reset()`
+- All 22 DOM-primitive functions exported for consumers building custom toolbar buttons
+- `toDom` / `toMarkdown` re-exported from `@kevinpeckham/barkdown`
+
+### Added
+
+- **Interactive Storybook story** for `MarkdownEditor` with realistic sample content (headings, lists, blockquote, formatting, footnote). `bun run storybook` and `bun run build-storybook` both work. Story file uses relative imports (`../src/lib/…`) because Storybook's Vite doesn't resolve `$lib`.
+- **README** — full consumer walkthrough replacing the alpha stub: install, usage, state class API, wrapping-for-domain-fields pattern, menus, sanitization notes, what's not in the package, known limitations.
+
+### Known limitations shipping with 0.1.0
+
+- **Vitest browser project not enabled** (tester-iframe hang, two attempts). Pure-logic layer is covered — 36 node tests across state class + DOM primitives.
+- **No per-menu Storybook stories** — menus are context-dependent (need real block refs, editor state, positioning). Interact with them via the main editor story.
+- **Sanitization schema is not configurable** yet — future minor bump.
+
+### Follow-ups queued for 0.2 / 0.3
+
+- Solve the vitest browser-tester issue (candidates: `@web/test-runner`, direct chrome-devtools-protocol)
+- Configurable sanitize schema via prop
+- Standalone menu stories once we have real browser-test fixtures to drive them
+- Optional frontmatter mode (`extract` / `preserve`) — `EditorConfig` type is scaffolded, no runtime yet
+
 ## [0.1.0-alpha.3] — 2026-07-21 — E3: WYSIWYG surface + menus
 
 The real WYSIWYG lands. Ports `BlogWysiwyg.svelte` (881 lines) and the four menus + footnote editor (983 lines combined) from `lightning-jar/replicator`, plus a small viewport-fit utility. Blog-editor state coupling swapped for the generic `MarkdownEditorState`.
