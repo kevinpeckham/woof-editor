@@ -4,6 +4,16 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] — 2026-07-21 — OIDC publish
+
+Same package contents as `0.1.0-alpha.0` — this release exists solely to smoke-test the new publish path.
+
+### Changed
+
+- **`ci`: publish now uses npm's OIDC-based Trusted Publisher flow instead of a long-lived NPM_TOKEN.** The published tarball also gets `--provenance` — a SLSA-style attestation linking the artifact to this exact commit SHA + workflow run. Shows up as a "verified provenance" badge on the npm package page. Kevin registered the trust config on npm.com against `kevinpeckham/woof-editor` + `publish.yml`; the `NPM_TOKEN` GitHub secret is now unused (safe to delete once this publish confirms OIDC works).
+
+## [0.1.0-alpha.0] — 2026-07-21 — E1 scaffold (first publish)
+
 ### Changed
 
 - **Renamed from `barkdown-editor` to `woof-editor`** — pre-publish rename before v0.1.0-alpha.0 hits npm. Two `barkdown-editor` GitHub projects already existed (Vue + Avalonia UI variants); `woof-editor` sidesteps the collision and coheres with the barkdown codec on a whimsical dog-theme. Package name: `@kevinpeckham/woof-editor`. Repo: `github.com/kevinpeckham/woof-editor`. Nothing was published under the old name.
