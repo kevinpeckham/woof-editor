@@ -2,4 +2,4 @@
 // STUB — v0.1.0-alpha.0. Real link-popover port lands in E3.
 </script>
 
-<div class="bde-menu-stub" data-menu="link-popover"></div>
+<div class="we-menu-stub" data-menu="link-popover"></div>

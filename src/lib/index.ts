@@ -1,4 +1,4 @@
-// Public API for @kevinpeckham/barkdown-editor.
+// Public API for @kevinpeckham/woof-editor.
 //
 // v0.1.0-alpha.0 ships stubs. Real implementations arrive incrementally:
 //   0.1.0-alpha.1  — actions/dom.ts (pure DOM primitives, no components)

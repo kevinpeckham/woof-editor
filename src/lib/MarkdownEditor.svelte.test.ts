@@ -11,6 +11,6 @@ import { MarkdownEditorState } from "./state/editor.svelte";
 test("stub renders with the expected version marker", async () => {
 	const editor = new MarkdownEditorState({ markdown: "# Hello" });
 	const screen = await render(MarkdownEditor, { editor });
-	const stub = screen.container.querySelector('[data-barkdown-editor-version="0.1.0-alpha.0"]');
+	const stub = screen.container.querySelector('[data-woof-editor-version="0.1.0-alpha.0"]');
 	expect(stub).not.toBeNull();
 });

@@ -1,8 +1,12 @@
 # Changelog
 
-Notable changes to `@kevinpeckham/barkdown-editor`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, breaking changes may land in minor versions.
+Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, breaking changes may land in minor versions.
 
 ## [Unreleased]
+
+### Changed
+
+- **Renamed from `barkdown-editor` to `woof-editor`** — pre-publish rename before v0.1.0-alpha.0 hits npm. Two `barkdown-editor` GitHub projects already existed (Vue + Avalonia UI variants); `woof-editor` sidesteps the collision and coheres with the barkdown codec on a whimsical dog-theme. Package name: `@kevinpeckham/woof-editor`. Repo: `github.com/kevinpeckham/woof-editor`. Nothing was published under the old name.
 
 ## [0.1.0-alpha.0] — 2026-07-21 — E1 scaffold
 

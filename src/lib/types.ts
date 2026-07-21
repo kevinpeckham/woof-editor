@@ -1,4 +1,4 @@
-// Public types for @kevinpeckham/barkdown-editor.
+// Public types for @kevinpeckham/woof-editor.
 // See src/lib/index.ts for the exported API surface.
 
 export type EditorConfig = {

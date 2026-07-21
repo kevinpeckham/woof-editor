@@ -3,7 +3,7 @@
 		"name": "Kevin Peckham"
 	},
 	"bugs": {
-		"url": "https://github.com/kevinpeckham/barkdown-editor/issues"
+		"url": "https://github.com/kevinpeckham/woof-editor/issues"
 	},
 	"description": "Barkdown-backed contenteditable markdown editor for Svelte 5. Round-trip WYSIWYG on marked, with menus, link popover, and footnote support. Companion to @kevinpeckham/barkdown.",
 	"devDependencies": {
@@ -51,7 +51,7 @@
 		"!dist/**/*.test.*",
 		"!dist/**/*.spec.*"
 	],
-	"homepage": "https://github.com/kevinpeckham/barkdown-editor#readme",
+	"homepage": "https://github.com/kevinpeckham/woof-editor#readme",
 	"keywords": [
 		"markdown",
 		"wysiwyg",
@@ -65,7 +65,7 @@
 		"footnotes"
 	],
 	"license": "MIT",
-	"name": "@kevinpeckham/barkdown-editor",
+	"name": "@kevinpeckham/woof-editor",
 	"peerDependencies": {
 		"@kevinpeckham/barkdown": "^0",
 		"isomorphic-dompurify": "^2",
@@ -78,7 +78,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kevinpeckham/barkdown-editor.git"
+		"url": "git+https://github.com/kevinpeckham/woof-editor.git"
 	},
 	"scripts": {
 		"audit": "bunx fallow audit",

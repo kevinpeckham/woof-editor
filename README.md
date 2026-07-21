@@ -1,4 +1,4 @@
-# @kevinpeckham/barkdown-editor
+# @kevinpeckham/woof-editor
 
 Contenteditable markdown editor for Svelte 5, backed by [`@kevinpeckham/barkdown`](https://www.npmjs.com/package/@kevinpeckham/barkdown)'s round-trip codec. Real markdown editing in a WYSIWYG surface — every keystroke serializes back to the canonical markdown form the codec would produce from the DOM, so save-and-reload never drifts.
 
@@ -17,9 +17,9 @@ That guarantee lets you build:
 ## Install
 
 ```sh
-bun add @kevinpeckham/barkdown-editor
+bun add @kevinpeckham/woof-editor
 # or
-npm i @kevinpeckham/barkdown-editor
+npm i @kevinpeckham/woof-editor
 ```
 
 Peer dependencies:
@@ -34,7 +34,7 @@ Peer dependencies:
 
 ```svelte
 <script lang="ts">
-  import { MarkdownEditor, MarkdownEditorState } from '@kevinpeckham/barkdown-editor';
+  import { MarkdownEditor, MarkdownEditorState } from '@kevinpeckham/woof-editor';
 
   const editor = new MarkdownEditorState({ markdown: '# Hello\n\nWorld.' });
 

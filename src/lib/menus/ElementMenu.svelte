@@ -2,4 +2,4 @@
 // STUB — v0.1.0-alpha.0. Real element-menu port lands in E3.
 </script>
 
-<div class="bde-menu-stub" data-menu="element"></div>
+<div class="we-menu-stub" data-menu="element"></div>

@@ -9,12 +9,12 @@ let { editor }: { editor: MarkdownEditorState } = $props();
 </script>
 
 <div
-	class="barkdown-editor-stub"
-	data-barkdown-editor-version="0.1.0-alpha.0"
+	class="woof-editor-stub"
+	data-woof-editor-version="0.1.0-alpha.0"
 	data-has-edits={editor.hasEdits}
 >
 	<p>
-		@kevinpeckham/barkdown-editor — v0.1.0-alpha.0 (scaffold). WYSIWYG
+		@kevinpeckham/woof-editor — v0.1.0-alpha.0 (scaffold). WYSIWYG
 		surface arrives in v0.1.0-alpha.2.
 	</p>
 	<textarea
@@ -26,13 +26,13 @@ let { editor }: { editor: MarkdownEditorState } = $props();
 </div>
 
 <style>
-	.barkdown-editor-stub {
+	.woof-editor-stub {
 		border: 1px dashed #bbb;
 		border-radius: 6px;
 		padding: 1rem;
 		background: #fafafa;
 	}
-	.barkdown-editor-stub p {
+	.woof-editor-stub p {
 		margin: 0 0 0.75rem 0;
 		font-size: 0.875rem;
 		color: #666;
