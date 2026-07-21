@@ -4,6 +4,37 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] — 2026-07-21 — E3: WYSIWYG surface + menus
+
+The real WYSIWYG lands. Ports `BlogWysiwyg.svelte` (881 lines) and the four menus + footnote editor (983 lines combined) from `lightning-jar/replicator`, plus a small viewport-fit utility. Blog-editor state coupling swapped for the generic `MarkdownEditorState`.
+
+### Added
+
+- **`src/lib/MarkdownEditor.svelte`** — contenteditable WYSIWYG surface (~880 lines). Barkdown ⇄ marked round-trip, 250ms debounced serialization on every DOM mutation, seed-effect gated on `editor.isSyncingFromWysiwyg`, gutter "⋮" element menu, keyboard-shortcut wiring, DOMPurify paste sanitization, footnote refs + definitions in marked-footnote's canonical shape.
+- **`src/lib/menus/ElementMenu.svelte`** — block-level menu (change type, toggle bold/italic/del wraps, add paragraph before/after, delete). Gated when the block is the first-h1 (the "article title" convention consumers may use).
+- **`src/lib/menus/SelectionMenu.svelte`** — inline formatting toolbar (bold, italic, strikethrough, link, unlink, footnote).
+- **`src/lib/menus/ContextMenu.svelte`** — right-click menu combining block + selection actions.
+- **`src/lib/menus/LinkPopover.svelte`** — link-editing popover (edit URL, remove link, open in new tab preview).
+- **`src/lib/menus/FootnoteEditor.svelte`** — inline footnote-definition editor.
+- **`src/lib/utils/fitPopoverToViewport.ts`** — viewport-clamping helper used by every menu to keep popovers on-screen.
+- **`MarkdownEditorState` extended** with undo/redo history (`history`, `historyIndex`, `isReplayingHistory`, `canUndo`, `canRedo`, `pushHistory()`, `resetHistory()`, `undo()`, `redo()`). Bounded at 100 snapshots, dedupes head, truncates redo tail on fresh edit.
+
+### Changed
+
+- Component/type renames applied verbatim across the port:
+  - `BlogWysiwyg` → `MarkdownEditor`
+  - `BlogWysiwygElementMenu` → `ElementMenu` (and the other four menu components)
+  - `BlogEditor` (type) → `MarkdownEditorState`
+  - `blogEditor` (prop / variable) → `editor`
+  - `firstBlogTitleH1` → `firstH1`, `isBlogTitleH1` → `isFirstH1`
+- `hydrateMarkdown()` now also primes the history stack (index 0 = loaded value), so the author's first edit is the first undoable step.
+
+### Deferred
+
+- **Vitest browser project still not enabled** — E1 hit a tester-iframe hang, E3 tried again after the sveltekit()→svelte() swap and hit the same hang. The state class + dom-action tests all run cleanly in the node project (36/36 pass). Real browser tests for the WYSIWYG surface land in a follow-up alpha once the iframe hang is chased down (candidates: `@web/test-runner`, or attaching chrome-devtools-protocol directly to avoid vitest's iframe layer).
+- Storybook stories per menu — currently just the placeholder story from E1. Real per-menu stories land alongside the browser tests.
+- README API examples — the stub in README.md still shows the alpha.0 shape. Full API docs land in E4 with the stable 0.1.0.
+
 ## [0.1.0-alpha.2] — 2026-07-21 — E2: DOM primitives
 
 Real code lands. Ports the ~779-line `blogWysiwygActions.ts` module from `lightning-jar/replicator` into this package as `src/lib/actions/dom.ts`, with the full test suite ported to vitest + happy-dom. Zero framework dependencies; consumers who want to build custom toolbar buttons or automations can import the primitives directly.
