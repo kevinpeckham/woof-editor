@@ -3,26 +3,22 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
 
-// This is a LIBRARY, not a SvelteKit app — we deliberately use the raw
-// `svelte()` vite plugin instead of `sveltekit()`. svelte-kit sync
-// (tsconfig gen) + svelte-package (dist build) still work — they read
-// svelte.config.js, not this file.
-//
-// Vitest browser project is intentionally not enabled here. E1's initial
-// attempt hung on the tester-iframe (chromium GPU at 98%, zero test
-// output); swapping sveltekit() → svelte() didn't fix it (tried again in
-// E3 — same hang). The state class + dom-action tests all run cleanly in
-// the node project with per-file `@vitest-environment happy-dom` for
-// tests that need a DOM. Real browser tests for the WYSIWYG surface land
-// in a follow-up alpha once the root cause of the iframe hang is chased
-// down (candidate: use `@web/test-runner` instead of vitest's browser
-// mode, or attach chrome-devtools-protocol directly).
+// Node-only vitest for now. The browser project has been attempted three
+// times (E1 with sveltekit()+storybook plugins, E3 with raw svelte(),
+// E4 with sveltekit()+--disable-gpu launch args) and hangs every time
+// with the Chromium GPU process pegged at 98% CPU. Kevin's briefing on
+// upstream sk-app-template pinned that project's hang on
+// @varlock/vite-integration serving error HTML to the tester iframe —
+// but this package doesn't use varlock, so we're hitting a different
+// failure mode. Needs a dedicated debugging session that diffs a known-
+// good sk-app-template fork's config against ours to spot the divergence
+// rather than iterating variations. Node tests (state class + DOM
+// primitives via happy-dom) cover the pure-logic surface — 36/36 pass.
 export default defineConfig({
 	plugins: [svelte()],
 	test: {
 		environment: "node",
 		exclude: [
-			// .svelte browser tests skipped until the browser project works.
 			"src/**/*.svelte.{test,spec}.{js,ts}",
 			"node_modules/**",
 			"dist/**",
