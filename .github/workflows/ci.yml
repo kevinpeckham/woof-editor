@@ -68,3 +68,5 @@ jobs:
         run: bun install --frozen-lockfile
       - name: svelte-package + publint
         run: bun run build
+      - name: demo site build
+        run: bun run build:site

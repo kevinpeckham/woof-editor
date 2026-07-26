@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { sveltekit } from "@sveltejs/kit/vite";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
@@ -27,7 +27,7 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ["@testing-library/dom"],
 	},
-	plugins: [svelte()],
+	plugins: [sveltekit()],
 	test: {
 		expect: {
 			requireAssertions: true,
