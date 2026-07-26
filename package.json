@@ -92,6 +92,7 @@
 		"build:site": "vite build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"dev": "storybook dev -p 6006",
+		"dev:site": "vite dev",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepublishOnly": "bun run check && bun run test && bun run build",
 		"preview:site": "vite preview",

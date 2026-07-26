@@ -28,6 +28,15 @@ export default defineConfig({
 		include: ["@testing-library/dom"],
 	},
 	plugins: [sveltekit()],
+	server: {
+		// Comma-separated extra hosts (e.g. the lj-bench dev VM's Caddy
+		// domain). Vite's own __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS env var
+		// only carries a single host, hence this project-level variable.
+		allowedHosts: process.env.DEV_ALLOWED_HOSTS?.split(",").filter(Boolean),
+		// Unique port in the lj-bench VM's dev-server scheme (Storybook keeps 6006).
+		port: 5223,
+		strictPort: true,
+	},
 	test: {
 		expect: {
 			requireAssertions: true,
