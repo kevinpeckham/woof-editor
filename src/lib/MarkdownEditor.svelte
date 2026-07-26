@@ -61,6 +61,7 @@ let {
 	sanitize,
 	loadLinkPreview,
 	config,
+	class: bodyClass = "",
 }: {
 	editor: MarkdownEditorState;
 	/** Optional DOMPurify schema overrides applied to seeded markdown-HTML and pasted HTML. */
@@ -69,6 +70,8 @@ let {
 	loadLinkPreview?: (url: string) => Promise<LinkPreview | null>;
 	/** Optional editor-wide configuration (e.g. serialize debounce). */
 	config?: EditorConfig;
+	/** Optional class applied to the contenteditable body — pass your site's article/typography class for real heading/paragraph/list styling. */
+	class?: string;
 } = $props();
 
 const debounceMs = $derived(config?.serializeDebounceMs ?? 250);
@@ -754,15 +757,17 @@ $effect(() => {
 });
 </script>
 
-<!-- shell: just a positioning parent for the gutter button. Scroll +
-     white background + page dimensions all live on the "page" wrapper
-     in `+page.svelte` now (mirrors doc-editor's document view). -->
-<div bind:this={shellRef} class="wysiwyg-shell relative">
+<!-- woof-shell: the positioning parent for the gutter button (`position:
+     relative`, so the button's `position: absolute; left: -38px` anchors
+     to it). Consumers must leave ~38px of clearance to the left of the
+     shell (e.g. padding on a wrapping container) or the button renders
+     off-screen / gets clipped. -->
+<div bind:this={shellRef} class="woof-shell">
 	{#if activeBlock && gutterButtonTop !== null}
 		<button
 			type="button"
-			class="wysiwyg-gutter-btn absolute z-10 h-6 min-w-6 px-1 rounded bg-oxford text-white text-[10px] font-mono font-semibold flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity leading-none shadow"
-			style="top: {gutterButtonTop + 6}px; left: -38px;"
+			class="woof-gutter-btn"
+			style="top: {gutterButtonTop + 6}px;"
 			onclick={handleGutterClick}
 			onmousedown={(e) => e.preventDefault()}
 			title="Edit block ({gutterLabel})"
@@ -786,7 +791,7 @@ $effect(() => {
 		onkeyup={handleContainerKeyUp}
 		oncontextmenu={handleContextMenu}
 		onclick={handleContainerClick}
-		class="blog-wysiwyg article-body focus:outline-none"
+		class="woof-editor-body {bodyClass}"
 	></div>
 </div>
 
@@ -827,22 +832,103 @@ $effect(() => {
 />
 
 <style>
-	/* article-body's shortcut covers h2..h6 + p + a + lists but not h1
-	   (the old read-only preview rendered h1 outside the article-body
-	   container). Now that the WYSIWYG owns the whole body, style h1
-	   inline so the article title reads like a title. */
-	.blog-wysiwyg :global(> h1) {
+	.woof-shell {
+		position: relative;
+	}
+
+	.woof-gutter-btn {
+		position: absolute;
+		left: -38px;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 1.5rem;
+		min-width: 1.5rem;
+		padding: 0 0.25rem;
+		border: none;
+		border-radius: 0.25rem;
+		background: var(--woof-gutter-bg, #081526);
+		color: var(--woof-gutter-fg, #fff);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 10px;
+		font-weight: 600;
+		line-height: 1;
+		opacity: 0.6;
+		cursor: pointer;
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+		transition: opacity 150ms;
+	}
+	.woof-gutter-btn:hover {
+		opacity: 1;
+	}
+
+	/* Bucket A — editor-required structural styles (normal specificity). */
+	.woof-editor-body {
+		line-height: 1.6;
+		min-height: 1.5em;
+	}
+	.woof-editor-body:focus {
+		outline: none;
+	}
+	.woof-editor-body :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+
+	/* Bucket B — zero-specificity readable fallbacks. :where() guarantees
+	   ANY consumer rule (even a bare `h2 {}`) wins. Consumers pass their
+	   article class via the `class` prop for real typography. */
+	.woof-editor-body :global(:where(h1)) {
 		font-size: 1.75em;
 		font-weight: 700;
 		line-height: 1.15;
-		margin-bottom: 1.25rem;
+		margin: 0 0 1.25rem;
+	}
+	.woof-editor-body :global(:where(h2)) {
+		font-size: 1.4em;
+		font-weight: 700;
+		margin: 1.75rem 0 0.75rem;
+	}
+	.woof-editor-body :global(:where(h3)) {
+		font-size: 1.2em;
+		font-weight: 700;
+		margin: 1.5rem 0 0.5rem;
+	}
+	.woof-editor-body :global(:where(h4, h5, h6)) {
+		font-size: 1.05em;
+		font-weight: 700;
+		margin: 1.25rem 0 0.5rem;
+	}
+	.woof-editor-body :global(:where(p)) {
+		margin: 0 0 1rem;
+	}
+	.woof-editor-body :global(:where(ul, ol)) {
+		margin: 0 0 1rem;
+		padding-left: 1.5rem;
+	}
+	.woof-editor-body :global(:where(ul)) {
+		list-style: disc;
+	}
+	.woof-editor-body :global(:where(ol)) {
+		list-style: decimal;
+	}
+	.woof-editor-body :global(:where(blockquote)) {
+		margin: 1rem 0;
+		padding-left: 1rem;
+		border-left: 3px solid var(--woof-accent, #3b82f6);
+		opacity: 0.85;
+	}
+	.woof-editor-body :global(:where(a)) {
+		color: var(--woof-accent, #3b82f6);
+		text-decoration: underline;
 	}
 
 	/* Code — fenced blocks scroll horizontally instead of painting past
 	   the page edge (pre defaults to white-space: pre + overflow:
 	   visible, so one long line escapes the 816px sheet); inline code
 	   gets a subtle chip treatment and wraps. */
-	.blog-wysiwyg :global(pre) {
+	.woof-editor-body :global(pre) {
 		max-width: 100%;
 		overflow-x: auto;
 		background: rgba(8, 21, 38, 0.05);
@@ -852,7 +938,7 @@ $effect(() => {
 		font-size: 0.85em;
 		line-height: 1.5;
 	}
-	.blog-wysiwyg :global(code) {
+	.woof-editor-body :global(code) {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 		background: rgba(8, 21, 38, 0.06);
 		padding: 0.1em 0.35em;
@@ -860,7 +946,7 @@ $effect(() => {
 		font-size: 0.875em;
 		overflow-wrap: break-word;
 	}
-	.blog-wysiwyg :global(pre code) {
+	.woof-editor-body :global(pre code) {
 		background: none;
 		padding: 0;
 		border-radius: 0;
@@ -870,7 +956,7 @@ $effect(() => {
 
 	/* Body footnote refs — small superscript link with a distinct
 	   color so the author can tell them apart from regular text. */
-	.blog-wysiwyg :global(sup a[data-footnote-ref]) {
+	.woof-editor-body :global(sup a[data-footnote-ref]) {
 		text-decoration: none;
 		color: inherit;
 		font-weight: 600;
@@ -878,21 +964,21 @@ $effect(() => {
 		border-radius: 0.15em;
 		cursor: pointer;
 	}
-	.blog-wysiwyg :global(sup a[data-footnote-ref]:hover) {
+	.woof-editor-body :global(sup a[data-footnote-ref]:hover) {
 		background: rgba(0, 90, 156, 0.12);
 	}
 
 	/* Footnotes section — visually separated from the article body,
 	   smaller/muted text, and an actually-visible heading. */
-	.blog-wysiwyg :global(section[data-footnotes]) {
+	.woof-editor-body :global(section[data-footnotes]) {
 		margin-top: 3rem;
 		padding-top: 1.5rem;
 		border-top: 1px solid rgba(8, 21, 38, 0.12);
 		font-size: 0.85em;
 		opacity: 0.75;
 	}
-	.blog-wysiwyg :global(section[data-footnotes] > .sr-only),
-	.blog-wysiwyg :global(section[data-footnotes] > h2) {
+	.woof-editor-body :global(section[data-footnotes] > .sr-only),
+	.woof-editor-body :global(section[data-footnotes] > h2) {
 		/* Override .sr-only visually-hides inside our editor so authors
 		   see the heading even when marked-footnote generates it as
 		   sr-only. */
@@ -910,15 +996,15 @@ $effect(() => {
 		letter-spacing: 0.06em;
 		opacity: 1;
 	}
-	.blog-wysiwyg :global(section[data-footnotes] ol) {
+	.woof-editor-body :global(section[data-footnotes] ol) {
 		padding-left: 1.5rem;
 		margin: 0;
 		list-style: decimal;
 	}
-	.blog-wysiwyg :global(section[data-footnotes] li) {
+	.woof-editor-body :global(section[data-footnotes] li) {
 		margin-bottom: 0.4rem;
 	}
-	.blog-wysiwyg :global(section[data-footnotes] li p) {
+	.woof-editor-body :global(section[data-footnotes] li p) {
 		margin: 0;
 		line-height: 1.5;
 	}
@@ -926,13 +1012,13 @@ $effect(() => {
 	/* Back-ref jumplink — the "↩" arrow at the end of each definition.
 	   Full opacity + underline on hover so it reads as clickable
 	   despite the surrounding muted opacity. */
-	.blog-wysiwyg :global(a[data-footnote-backref]) {
+	.woof-editor-body :global(a[data-footnote-backref]) {
 		text-decoration: none;
 		margin-left: 0.35rem;
 		opacity: 0.9;
 		cursor: pointer;
 	}
-	.blog-wysiwyg :global(a[data-footnote-backref]:hover) {
+	.woof-editor-body :global(a[data-footnote-backref]:hover) {
 		text-decoration: underline;
 	}
 </style>

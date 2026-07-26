@@ -109,24 +109,22 @@ function displayHost(href: string): string {
 <div
 	bind:this={popoverEl}
 	popover="auto"
-	class="fixed w-80 bg-white text-rich-black border border-slate-300 rounded-md shadow-xl overflow-hidden text-sm transition-opacity {positioned
-		? 'opacity-100'
-		: 'opacity-0'}"
-	style="left: 0; top: 0; margin: 0;"
+	class="woof-link-panel {positioned ? '' : 'unpositioned'}"
+	style="left: 0; top: 0;"
 	ontoggle={(e) => {
 		if ((e as ToggleEvent).newState === "closed" && linkState.open) onClose();
 	}}
 >
 	{#if editing}
-		<div class="p-3">
-			<div class="text-xs uppercase tracking-wide opacity-50 mb-1.5">
+		<div class="woof-link-body">
+			<div class="woof-link-label">
 				Edit link URL
 			</div>
 			<input
 				type="text"
 				bind:value={editValue}
 				placeholder="https://example.com"
-				class="w-full px-2 py-1 border rounded text-sm mb-2"
+				class="woof-link-input"
 				onkeydown={(e) => {
 					if (e.key === "Enter") {
 						e.preventDefault();
@@ -134,27 +132,15 @@ function displayHost(href: string): string {
 					}
 				}}
 			/>
-			<div class="flex items-center gap-2 justify-between">
-				<button
-					type="button"
-					class="text-xs px-2 py-1 text-red-600 hover:underline"
-					onclick={onRemove}
-				>
+			<div class="woof-link-actions spread">
+				<button type="button" class="woof-link-btn-text woof-link-btn-danger" onclick={onRemove}>
 					Remove link
 				</button>
-				<div class="flex gap-2">
-					<button
-						type="button"
-						class="text-xs px-2 py-1 opacity-60 hover:opacity-100"
-						onclick={() => (editing = false)}
-					>
+				<div class="woof-link-actions">
+					<button type="button" class="woof-link-btn-text" onclick={() => (editing = false)}>
 						Cancel
 					</button>
-					<button
-						type="button"
-						class="text-xs px-3 py-1 bg-blue text-white rounded font-semibold"
-						onclick={() => onEditHref(editValue.trim())}
-					>
+					<button type="button" class="woof-link-btn-primary" onclick={() => onEditHref(editValue.trim())}>
 						Save
 					</button>
 				</div>
@@ -162,55 +148,191 @@ function displayHost(href: string): string {
 		</div>
 	{:else}
 		{#if preview?.image}
-			<img
-				src={preview.image}
-				alt=""
-				class="w-full h-32 object-cover bg-slate-100"
-				loading="lazy"
-			/>
+			<img src={preview.image} alt="" class="woof-link-image" loading="lazy" />
 		{/if}
-		<div class="p-3">
-			<div class="flex items-center gap-1.5 text-xs opacity-60 mb-1">
+		<div class="woof-link-body">
+			<div class="woof-link-site">
 				{#if preview?.favicon}
-					<img src={preview.favicon} alt="" class="w-4 h-4 rounded-sm" />
+					<img src={preview.favicon} alt="" />
 				{/if}
-				<span class="truncate">
+				<span>
 					{preview?.siteName || displayHost(linkState.href)}
 				</span>
 			</div>
 			{#if loading}
-				<div class="text-sm opacity-60 mb-1">Loading preview…</div>
+				<div class="woof-link-muted">Loading preview…</div>
 			{:else}
 				{#if preview?.title}
-					<div class="font-600 leading-snug mb-1 line-clamp-2">
+					<div class="woof-link-title">
 						{preview.title}
 					</div>
 				{/if}
 				{#if preview?.description}
-					<div class="text-xs opacity-70 leading-snug line-clamp-3 mb-1">
+					<div class="woof-link-desc">
 						{preview.description}
 					</div>
 				{/if}
 			{/if}
-			<div class="text-xs text-blue-600 truncate mb-3" title={linkState.href}>
+			<div class="woof-link-url" title={linkState.href}>
 				{linkState.href}
 			</div>
-			<div class="flex items-center gap-2 justify-end">
-				<button
-					type="button"
-					class="text-xs px-2 py-1 border rounded hover:bg-slate-100"
-					onclick={startEditing}
-				>
+			<div class="woof-link-actions">
+				<button type="button" class="woof-link-btn" onclick={startEditing}>
 					✎ Edit link
 				</button>
-				<button
-					type="button"
-					class="text-xs px-3 py-1 bg-oxford text-white rounded font-semibold"
-					onclick={onOpenExternal}
-				>
+				<button type="button" class="woof-link-btn-primary" onclick={onOpenExternal}>
 					↗ Open in new tab
 				</button>
 			</div>
 		</div>
 	{/if}
 </div>
+
+<style>
+	.woof-link-panel {
+		position: fixed;
+		width: 20rem;
+		margin: 0;
+		padding: 0;
+		background: var(--woof-popover-bg, #fff);
+		color: var(--woof-popover-fg, #0f172a);
+		border: 1px solid var(--woof-popover-border, #cbd5e1);
+		border-radius: 0.375rem;
+		box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.15);
+		overflow: hidden;
+		font-size: 0.875rem;
+		transition: opacity 100ms;
+	}
+	.woof-link-panel.unpositioned {
+		opacity: 0;
+	}
+	.woof-link-image {
+		width: 100%;
+		height: 8rem;
+		object-fit: cover;
+		background: #f1f5f9;
+	}
+	.woof-link-body {
+		padding: 0.75rem;
+	}
+	.woof-link-site {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		margin-bottom: 0.25rem;
+		font-size: 0.75rem;
+		opacity: 0.6;
+	}
+	.woof-link-site img {
+		width: 1rem;
+		height: 1rem;
+		border-radius: 0.125rem;
+	}
+	.woof-link-site span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.woof-link-title {
+		margin-bottom: 0.25rem;
+		font-weight: 600;
+		line-height: 1.35;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.woof-link-desc {
+		margin-bottom: 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1.35;
+		opacity: 0.7;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.woof-link-url {
+		margin-bottom: 0.75rem;
+		font-size: 0.75rem;
+		color: var(--woof-accent, #2563eb);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.woof-link-muted {
+		margin-bottom: 0.25rem;
+		opacity: 0.6;
+	}
+	.woof-link-actions {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+	.woof-link-actions.spread {
+		justify-content: space-between;
+	}
+	.woof-link-btn {
+		padding: 0.25rem 0.5rem;
+		background: none;
+		border: 1px solid var(--woof-popover-border, #cbd5e1);
+		border-radius: 0.25rem;
+		color: inherit;
+		font: inherit;
+		font-size: 0.75rem;
+		cursor: pointer;
+	}
+	.woof-link-btn:hover {
+		background: #f1f5f9;
+	}
+	.woof-link-btn-primary {
+		padding: 0.25rem 0.75rem;
+		background: var(--woof-gutter-bg, #081526);
+		border: none;
+		border-radius: 0.25rem;
+		color: #fff;
+		font-weight: 600;
+	}
+	.woof-link-btn-primary:hover {
+		filter: brightness(1.2);
+	}
+	.woof-link-btn-text {
+		padding: 0.25rem 0.5rem;
+		background: none;
+		border: none;
+		color: inherit;
+		font: inherit;
+		font-size: 0.75rem;
+		cursor: pointer;
+		opacity: 0.6;
+	}
+	.woof-link-btn-text:hover {
+		opacity: 1;
+	}
+	.woof-link-btn-danger {
+		color: #dc2626;
+		opacity: 1;
+	}
+	.woof-link-btn-danger:hover {
+		text-decoration: underline;
+	}
+	.woof-link-input {
+		width: 100%;
+		margin-bottom: 0.5rem;
+		padding: 0.25rem 0.5rem;
+		background: var(--woof-popover-bg, #fff);
+		border: 1px solid var(--woof-popover-border, #cbd5e1);
+		border-radius: 0.25rem;
+		color: inherit;
+		font: inherit;
+		font-size: 0.875rem;
+	}
+	.woof-link-label {
+		margin-bottom: 0.375rem;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.5;
+	}
+</style>

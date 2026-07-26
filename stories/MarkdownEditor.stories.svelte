@@ -12,7 +12,7 @@ const { Story } = defineMeta({
 
 {#snippet editorTemplate(initialMd: string)}
 	{@const editor = new MarkdownEditorState({ markdown: initialMd })}
-	<div style="max-width: 720px; margin: 1rem auto;">
+	<div style="max-width: 720px; margin: 1rem auto; padding-left: 48px;">
 		<MarkdownEditor {editor} />
 		<div style="margin-top: 1rem; padding: 0.75rem; background: #f5f5f5; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.75rem; white-space: pre-wrap;">
 			<strong style="font-family: system-ui;">Serialized markdown (updates on edit):</strong>{"\n"}{editor.markdownCurrent}

@@ -159,21 +159,17 @@ function handleTypeChange(targetTag: string) {
 	popover="manual"
 	role="menu"
 	tabindex="-1"
-	class="fixed inset-0 w-screen h-screen bg-transparent p-0 border-0 pointer-events-none"
+	class="woof-menu-backdrop"
 	onkeydown={(e) => {
 		if (e.key === "Escape") onClose();
 	}}
 >
-	<div
-		bind:this={innerEl}
-		class="absolute bg-slate-800 text-white border border-white/10 rounded-md shadow-lg py-1 text-sm select-none pointer-events-auto"
-		style="left: 0; top: 0;"
-	>
-		<div class="flex items-center gap-0 px-1">
+	<div bind:this={innerEl} class="woof-menu-panel" style="left: 0; top: 0;">
+		<div class="woof-toolbar">
 			{#if !isHeading}
 				<button
 					type="button"
-					class="px-2 py-1 hover:bg-slate-700 rounded font-bold"
+					class="woof-toolbar-btn bold"
 					onmousedown={preserveSelection}
 					onclick={handleBold}
 					aria-label="Bold"
@@ -183,7 +179,7 @@ function handleTypeChange(targetTag: string) {
 				</button>
 				<button
 					type="button"
-					class="px-2 py-1 hover:bg-slate-700 rounded italic"
+					class="woof-toolbar-btn italic"
 					onmousedown={preserveSelection}
 					onclick={handleItalic}
 					aria-label="Italic"
@@ -195,7 +191,7 @@ function handleTypeChange(targetTag: string) {
 			{#if selectionState.linkEl}
 				<button
 					type="button"
-					class="px-2 py-1 hover:bg-slate-700 rounded"
+					class="woof-toolbar-btn"
 					onmousedown={preserveSelection}
 					onclick={handleUnlink}
 					title="Remove link"
@@ -205,7 +201,7 @@ function handleTypeChange(targetTag: string) {
 			{:else}
 				<button
 					type="button"
-					class="px-2 py-1 hover:bg-slate-700 rounded"
+					class="woof-toolbar-btn"
 					onmousedown={preserveSelection}
 					onclick={handleLink}
 					title="Add link"
@@ -214,28 +210,25 @@ function handleTypeChange(targetTag: string) {
 				</button>
 			{/if}
 			{#if selectionState.wholeBlock && !isTitle}
-				<div class="w-px h-4 bg-white/20 mx-1"></div>
+				<div class="woof-toolbar-divider"></div>
 				<button
 					type="button"
-					class="px-2 py-1 hover:bg-slate-700 rounded flex items-center gap-1"
+					class="woof-toolbar-btn"
 					onmousedown={preserveSelection}
 					onclick={() => (showTypeSubmenu = !showTypeSubmenu)}
 					title="Change block type"
 				>
 					Type
-					<span class="opacity-60">{showTypeSubmenu ? "▾" : "▸"}</span>
+					<span class="woof-chevron">{showTypeSubmenu ? "▾" : "▸"}</span>
 				</button>
 			{/if}
 		</div>
 		{#if showTypeSubmenu && selectionState.wholeBlock && !isTitle}
-			<div class="border-t border-white/10 mt-1 pt-1">
+			<div class="woof-submenu">
 				{#each CONVERTIBLE_TAGS_LIST as option (option.tag)}
 					<button
 						type="button"
-						class="w-full text-left px-3 py-1 hover:bg-slate-700 {selectionState.wholeBlock?.tagName.toLowerCase() ===
-						option.tag
-							? 'text-blue-300'
-							: ''}"
+						class="woof-menu-item {selectionState.wholeBlock?.tagName.toLowerCase() === option.tag ? 'is-active' : ''}"
 						onmousedown={preserveSelection}
 						onclick={() => handleTypeChange(option.tag)}
 					>
@@ -246,3 +239,86 @@ function handleTypeChange(targetTag: string) {
 		{/if}
 	</div>
 </div>
+
+<style>
+	.woof-menu-backdrop {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		background: transparent;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		pointer-events: none;
+	}
+	.woof-menu-panel {
+		position: absolute;
+		padding: 0.25rem 0;
+		background: var(--woof-menu-bg, #1e293b);
+		color: var(--woof-menu-fg, #f8fafc);
+		border: 1px solid var(--woof-menu-border, rgb(255 255 255 / 0.1));
+		border-radius: 0.375rem;
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+		font-size: 0.875rem;
+		user-select: none;
+		pointer-events: auto;
+	}
+	.woof-toolbar {
+		display: flex;
+		align-items: center;
+		padding: 0 0.25rem;
+	}
+	.woof-toolbar-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.25rem 0.5rem;
+		background: none;
+		border: none;
+		border-radius: 0.25rem;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+	.woof-toolbar-btn:hover {
+		background: var(--woof-menu-hover, #334155);
+	}
+	.woof-toolbar-btn.bold {
+		font-weight: 700;
+	}
+	.woof-toolbar-btn.italic {
+		font-style: italic;
+	}
+	.woof-toolbar-divider {
+		width: 1px;
+		height: 1rem;
+		background: rgb(255 255 255 / 0.2);
+		margin: 0 0.25rem;
+	}
+	.woof-submenu {
+		border-top: 1px solid var(--woof-menu-border, rgb(255 255 255 / 0.1));
+		margin-top: 0.25rem;
+		padding-top: 0.25rem;
+	}
+	.woof-menu-item {
+		display: block;
+		width: 100%;
+		padding: 0.25rem 0.75rem;
+		background: none;
+		border: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.woof-menu-item:hover {
+		background: var(--woof-menu-hover, #334155);
+	}
+	.woof-menu-item.is-active {
+		color: var(--woof-accent-soft, #93c5fd);
+	}
+	.woof-chevron {
+		opacity: 0.6;
+	}
+</style>

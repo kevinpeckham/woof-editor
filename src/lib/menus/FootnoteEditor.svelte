@@ -105,18 +105,12 @@ function handleKeydown(e: KeyboardEvent) {
 	role="dialog"
 	aria-label="Edit footnote"
 	tabindex="-1"
-	class="fixed inset-0 w-screen h-screen bg-transparent p-0 border-0"
+	class="woof-menu-backdrop"
 	onclick={handleBackdropClick}
 	onkeydown={handleKeydown}
 >
-	<div
-		bind:this={innerEl}
-		class="absolute bg-slate-800 text-white border border-white/10 rounded-md shadow-lg p-3 w-72 text-sm"
-		style="left: 0; top: 0;"
-	>
-		<div
-			class="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1.5"
-		>
+	<div bind:this={innerEl} class="woof-fn-panel" style="left: 0; top: 0;">
+		<div class="woof-fn-label">
 			Footnote [{footnoteState.num}]
 		</div>
 		<textarea
@@ -124,34 +118,104 @@ function handleKeydown(e: KeyboardEvent) {
 			bind:value={text}
 			rows="4"
 			placeholder="Footnote text…"
-			class="w-full px-2 py-1.5 bg-slate-900 border border-white/10 rounded text-white text-sm resize-vertical focus:outline-none focus:border-white/30"
+			class="woof-fn-textarea"
 		></textarea>
-		<div class="flex items-center gap-2 mt-2">
+		<div class="woof-fn-actions">
 			{#if !footnoteState.isNew}
-				<button
-					type="button"
-					class="px-2 py-1 text-xs text-red-300 hover:bg-slate-700 rounded"
-					onclick={handleDelete}
-				>
+				<button type="button" class="woof-btn woof-btn-danger" onclick={handleDelete}>
 					Delete
 				</button>
 			{/if}
-			<div class="ml-auto flex gap-2">
-				<button
-					type="button"
-					class="px-3 py-1 text-xs hover:bg-slate-700 rounded"
-					onclick={handleCancel}
-				>
+			<div class="woof-fn-actions-end">
+				<button type="button" class="woof-btn" onclick={handleCancel}>
 					Cancel
 				</button>
-				<button
-					type="button"
-					class="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded font-semibold"
-					onclick={handleSave}
-				>
+				<button type="button" class="woof-btn woof-btn-primary" onclick={handleSave}>
 					Save
 				</button>
 			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	.woof-menu-backdrop {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		background: transparent;
+		border: 0;
+		padding: 0;
+		margin: 0;
+	}
+	.woof-fn-panel {
+		position: absolute;
+		width: 18rem;
+		padding: 0.75rem;
+		background: var(--woof-menu-bg, #1e293b);
+		color: var(--woof-menu-fg, #f8fafc);
+		border: 1px solid var(--woof-menu-border, rgb(255 255 255 / 0.1));
+		border-radius: 0.375rem;
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+		font-size: 0.875rem;
+	}
+	.woof-fn-label {
+		margin-bottom: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.6;
+	}
+	.woof-fn-textarea {
+		width: 100%;
+		padding: 0.375rem 0.5rem;
+		background: var(--woof-input-bg, #0f172a);
+		border: 1px solid var(--woof-menu-border, rgb(255 255 255 / 0.1));
+		border-radius: 0.25rem;
+		color: inherit;
+		font: inherit;
+		font-size: 0.875rem;
+		resize: vertical;
+	}
+	.woof-fn-textarea:focus {
+		outline: none;
+		border-color: rgb(255 255 255 / 0.3);
+	}
+	.woof-fn-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+	.woof-fn-actions-end {
+		display: flex;
+		gap: 0.5rem;
+		margin-left: auto;
+	}
+	.woof-btn {
+		padding: 0.25rem 0.75rem;
+		background: none;
+		border: none;
+		border-radius: 0.25rem;
+		color: inherit;
+		font: inherit;
+		font-size: 0.75rem;
+		cursor: pointer;
+	}
+	.woof-btn:hover {
+		background: var(--woof-menu-hover, #334155);
+	}
+	.woof-btn-primary {
+		background: var(--woof-accent, #3b82f6);
+		font-weight: 600;
+	}
+	.woof-btn-primary:hover {
+		background: var(--woof-accent, #3b82f6);
+		filter: brightness(1.1);
+	}
+	.woof-btn-danger {
+		color: var(--woof-danger, #fca5a5);
+	}
+</style>
