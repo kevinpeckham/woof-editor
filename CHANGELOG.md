@@ -8,7 +8,7 @@ Hardening pass aimed at making the package genuinely consumable outside `lightni
 
 ### Added
 
-- **Paste sanitization.** Pasting into the editor now runs rich HTML through the same DOMPurify config used to seed the surface from markdown — script tags, `on*` handlers, and `javascript:`/`vbscript:`/`data:` URLs are stripped either way. Plain-text paste falls back to a text-node insert. `insertSanitizedHtmlAtSelection(html, container): boolean` is exported from `actions/dom` / the package root for consumers building custom paste handling.
+- **Paste sanitization.** Pasting into the editor now runs rich HTML through the same DOMPurify config used to seed the surface from markdown — script tags and `on*` handlers are stripped either way, and `javascript:`/`vbscript:`/`data:` URLs are stripped from link `href`s. (Per DOMPurify's default URI policy, `data:` remains permitted on media attributes such as `img src`; see README → Sanitization.) Plain-text paste falls back to a text-node insert. `insertSanitizedHtmlAtSelection(html, container): boolean` is exported from `actions/dom` / the package root for consumers building custom paste handling.
 - **`sanitize` prop** on `<MarkdownEditor>` — accepts a `SanitizeSchema` (`ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR`, all optional) to widen or tighten the DOMPurify config for both the seed path and the paste path.
 - **`loadLinkPreview` prop** on `<MarkdownEditor>` — `(url: string) => Promise<LinkPreview | null>`, threaded through to `LinkPopover`. Without it, the popover shows just the URL + actions (no loading state, no fetch). New exported type `LinkPreview` (`url`, `title?`, `description?`, `image?`, `siteName?`, `favicon?`).
 - **Keyboard undo/redo.** Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, and Ctrl+Y now route to `MarkdownEditorState`'s history (`editor.undo()` / `editor.redo()`) instead of the browser's native contenteditable undo, which was broken by the component's imperative `innerHTML` re-seeds.
@@ -27,6 +27,7 @@ Hardening pass aimed at making the package genuinely consumable outside `lightni
 
 ### Fixed
 
+- **`sanitize`'s `ALLOWED_TAGS` / `ALLOWED_ATTR` were silent no-ops.** The merged config always kept `USE_PROFILES: { html: true }`, and DOMPurify resolves the profile *after* those two fields and overwrites them — so a consumer passing `ALLOWED_TAGS: ["p", "strong"]` still got the full html allowlist. Config building moved to a pure, unit-tested `buildSanitizeConfig()` (`src/lib/utils/sanitize.ts`) that omits `USE_PROFILES` whenever an allowlist field is supplied, keeps it when only `FORBID_*` is supplied, and always applies the additive footnote `ADD_ATTR`. `FORBID_TAGS` / `FORBID_ATTR` were unaffected and behaved correctly throughout.
 - `changeBlockType` round-trips code blocks correctly in both directions (see Added) — previously converting a paragraph to `pre` produced a bare `<pre>` with no inner `<code>`, which didn't serialize back to a fenced code block, and converting away from `pre` left an inline `<code>` wrapping the whole result.
 
 ### Removed

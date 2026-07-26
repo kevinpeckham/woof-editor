@@ -51,6 +51,9 @@ content execute script or otherwise escape the editor surface:
 ## Out of scope
 
 - Issues in third-party dependencies — report upstream
-- Issues in a consumer's own usage (e.g. rendering untrusted markdown
-  without keeping sanitization enabled)
+- Issues in a consumer's own usage — e.g. widening the allowlist via the
+  `sanitize` prop to admit dangerous markup, or re-rendering the editor's
+  serialized markdown elsewhere without sanitizing at that boundary.
+  (Sanitization inside the editor is always on; the `sanitize` prop only
+  adjusts the allowlist and cannot turn it off.)
 - Theoretical issues requiring an already-compromised build pipeline

@@ -30,6 +30,7 @@ import LinkPopover from "./menus/LinkPopover.svelte";
 import SelectionMenu from "./menus/SelectionMenu.svelte";
 import type { MarkdownEditorState } from "./state/editor.svelte";
 import type { EditorConfig, LinkPreview, SanitizeSchema } from "./types";
+import { buildSanitizeConfig } from "./utils/sanitize";
 
 /**
  * WYSIWYG surface for the blog editor's preview pane. Owns a
@@ -176,22 +177,12 @@ let footnoteState = $state<{
 	y: 0,
 });
 
-// Base DOMPurify config shared by the markdown seed path and the paste
-// path. `sanitize` prop fields overlay it (consumer widening/tightening).
-const DEFAULT_SANITIZE = {
-	ADD_ATTR: ["data-footnote-ref", "data-footnotes", "id"],
-	USE_PROFILES: { html: true },
-};
-
+// Sanitization config for the markdown seed path and the paste path.
+// `buildSanitizeConfig` overlays the consumer's `sanitize` schema onto the
+// default — see src/lib/utils/sanitize.ts for why that merge can't be a
+// plain spread (USE_PROFILES overrides ALLOWED_TAGS/ALLOWED_ATTR).
 function sanitizeHtml(raw: string): string {
-	if (!sanitize) return DOMPurify.sanitize(raw, DEFAULT_SANITIZE);
-	return DOMPurify.sanitize(raw, {
-		...DEFAULT_SANITIZE,
-		...(sanitize.ALLOWED_TAGS ? { ALLOWED_TAGS: [...sanitize.ALLOWED_TAGS] } : {}),
-		...(sanitize.ALLOWED_ATTR ? { ALLOWED_ATTR: [...sanitize.ALLOWED_ATTR] } : {}),
-		...(sanitize.FORBID_TAGS ? { FORBID_TAGS: [...sanitize.FORBID_TAGS] } : {}),
-		...(sanitize.FORBID_ATTR ? { FORBID_ATTR: [...sanitize.FORBID_ATTR] } : {}),
-	});
+	return DOMPurify.sanitize(raw, buildSanitizeConfig(sanitize));
 }
 
 function seedFromMarkdown(md: string) {

@@ -177,9 +177,11 @@ Then in the component:
 
 ## Sanitization
 
-Both content paths run through `isomorphic-dompurify` with one shared config: the markdown you seed the editor with (rendered to HTML via `marked`) AND anything pasted into the surface. Script tags, `on*` handlers, and dangerous URL schemes (`javascript:`, `vbscript:`, `data:`) are stripped either way.
+Both content paths run through `isomorphic-dompurify` with one shared config: the markdown you seed the editor with (rendered to HTML via `marked`) AND anything pasted into the surface. Script tags and `on*` handlers are stripped either way, and `javascript:`, `vbscript:` and `data:` URLs are stripped from link `href`s.
 
-The default config uses DOMPurify's `USE_PROFILES: { html: true }` plus a small allowlist of footnote attributes (`data-footnote-ref`, `data-footnotes`, `id`) so `marked-footnote`'s markup survives. Pass a `sanitize` prop to widen or tighten it for your content:
+> **Scope note on `data:`.** DOMPurify's default URI policy allows `data:` on *media* attributes — a pasted `<img src="data:image/png;base64,…">` is preserved, by design, so inline images survive a paste. Only anchor `href`s reject `data:`. If your threat model requires no data-URI content at all, pass `FORBID_TAGS: ["img"]` (or an `ALLOWED_TAGS` list without `img`).
+
+Sanitization is **always on** and cannot be disabled; the `sanitize` prop only adjusts the allowlist. The default config uses DOMPurify's `USE_PROFILES: { html: true }` plus a small allowlist of footnote attributes (`data-footnote-ref`, `data-footnotes`, `id`) so `marked-footnote`'s markup survives. Pass a `sanitize` prop to widen or tighten it for your content:
 
 ```svelte
 <MarkdownEditor
@@ -191,7 +193,15 @@ The default config uses DOMPurify's `USE_PROFILES: { html: true }` plus a small 
 />
 ```
 
-`sanitize` accepts `ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR` (all optional — each field you provide overrides DOMPurify's default for that field; the footnote attributes stay allowed regardless, since they're added on top rather than replaced). Applies to both the seed path and the paste path.
+That example is a genuine tightening: because it provides `ALLOWED_TAGS`, the resulting config **replaces** the default `html` profile rather than adding to it — so headings, blockquotes, images, tables and everything else outside that six-tag list are stripped (their text content is kept). Note this means the editor will no longer round-trip markdown it can't represent; only narrow the allowlist to tags your content actually uses.
+
+`sanitize` accepts `ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR`, all optional:
+
+- Providing **`ALLOWED_TAGS` and/or `ALLOWED_ATTR`** drops `USE_PROFILES` from the config. This is required, not incidental: DOMPurify resolves `USE_PROFILES` *after* those fields and overwrites them with the profile's own allowlists, so a config carrying both would make your allowlist a silent no-op.
+- Providing **only `FORBID_TAGS` / `FORBID_ATTR`** keeps the default `html` profile and subtracts from it.
+- The footnote attributes stay allowed under either shape — they're applied via `ADD_ATTR`, which is additive rather than replacing.
+
+Applies to both the seed path and the paste path.
 
 To skip sanitization/rich-paste entirely for a given paste, right-click and choose **Paste as plain text** from the context menu — it reads the clipboard's plain-text flavor directly and inserts it as a text node. (The editor's own paste handler intercepts every paste event and prefers the HTML flavor whenever the clipboard offers one, so there's no browser-shortcut alternative this package can guarantee — the context menu entry is the reliable plain-paste path.)
 
