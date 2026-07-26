@@ -16,7 +16,12 @@
 import DOMPurify from "isomorphic-dompurify";
 import { describe, expect, test } from "vitest";
 
-import { buildSanitizeConfig, DEFAULT_SANITIZE } from "./sanitize";
+import {
+	buildSanitizeConfig,
+	DEFAULT_SANITIZE,
+	HTML_PROFILE_ATTRS,
+	HTML_PROFILE_TAGS,
+} from "./sanitize";
 
 describe("buildSanitizeConfig — config shape", () => {
 	test("no schema → the default config (html profile + footnote attrs)", () => {
@@ -159,5 +164,59 @@ describe("buildSanitizeConfig — behavior through DOMPurify", () => {
 			buildSanitizeConfig(),
 		);
 		expect(clean).toContain("data:image/png");
+	});
+});
+
+// The residual finding from the final re-review: dropping USE_PROFILES for
+// *either* ALLOWED_TAGS or ALLOWED_ATTR left the OTHER, unsupplied dimension
+// on DOMPurify's full built-in default (html ∪ svg ∪ svgFilters ∪ mathMl) —
+// which is WIDER than the html profile the README promises. Supplying just
+// one dimension must pin the other to the html-profile set, not drop it to
+// "everything DOMPurify knows about".
+describe("buildSanitizeConfig — single-dimension schemas pin the other to the html profile", () => {
+	test("vendored html-profile lists are non-trivial (extraction guard)", () => {
+		expect(HTML_PROFILE_TAGS).toContain("p");
+		expect(HTML_PROFILE_TAGS).toContain("a");
+		expect(HTML_PROFILE_TAGS).toContain("table");
+		expect(HTML_PROFILE_TAGS.length).toBeGreaterThan(100);
+
+		expect(HTML_PROFILE_ATTRS).toContain("href");
+		expect(HTML_PROFILE_ATTRS).toContain("title");
+		expect(HTML_PROFILE_ATTRS.length).toBeGreaterThan(40);
+	});
+
+	test("config shape: ALLOWED_TAGS alone → ALLOWED_ATTR is pinned to the html profile", () => {
+		const config = buildSanitizeConfig({ ALLOWED_TAGS: ["p", "strong"] });
+		expect(config.USE_PROFILES).toBeUndefined();
+		expect(config.ALLOWED_TAGS).toEqual(["p", "strong"]);
+		expect(config.ALLOWED_ATTR).toEqual([...HTML_PROFILE_ATTRS]);
+	});
+
+	test("config shape: ALLOWED_ATTR alone → ALLOWED_TAGS is pinned to the html profile", () => {
+		const config = buildSanitizeConfig({ ALLOWED_ATTR: ["href"] });
+		expect(config.USE_PROFILES).toBeUndefined();
+		expect(config.ALLOWED_ATTR).toEqual(["href"]);
+		expect(config.ALLOWED_TAGS).toEqual([...HTML_PROFILE_TAGS]);
+	});
+
+	test("behavioral: ALLOWED_ATTR alone does NOT widen tags to svg/mathml", () => {
+		const clean = DOMPurify.sanitize(
+			"<svg><circle></circle></svg><math><mi>x</mi></math><p>y</p>",
+			buildSanitizeConfig({ ALLOWED_ATTR: ["href"] }),
+		);
+		expect(clean).not.toContain("<svg");
+		expect(clean).not.toContain("<circle");
+		expect(clean).not.toContain("<math");
+		expect(clean).not.toContain("<mi>");
+		expect(clean).toContain("<p>y</p>");
+	});
+
+	test("behavioral: ALLOWED_TAGS alone does NOT widen attrs to svg/mathml", () => {
+		const clean = DOMPurify.sanitize(
+			'<p fill="red" title="t">y</p>',
+			buildSanitizeConfig({ ALLOWED_TAGS: ["p", "strong"] }),
+		);
+		expect(clean).not.toContain("fill=");
+		expect(clean).toContain('title="t"');
 	});
 });
