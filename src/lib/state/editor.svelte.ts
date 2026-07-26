@@ -7,6 +7,8 @@
 // Deliberately domain-neutral. Consumer state classes wrap this one for
 // their own fields (title, slug, tags, categories, publish status, etc.).
 
+import type { EditorSnapshot } from "../types";
+
 export type MarkdownEditorInit = {
 	markdown?: string;
 };
@@ -120,6 +122,14 @@ export class MarkdownEditorState {
 	 */
 	markAsSaved(): void {
 		this.markdownOriginal = this.markdownCurrent;
+	}
+
+	/**
+	 * Point-in-time snapshot of the current markdown, suitable for
+	 * save-side hashing / dirty comparisons.
+	 */
+	snapshot(): EditorSnapshot {
+		return { markdown: this.markdownCurrent, timestamp: Date.now() };
 	}
 
 	/**

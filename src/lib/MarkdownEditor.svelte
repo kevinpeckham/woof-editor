@@ -29,7 +29,7 @@ import FootnoteEditor from "./menus/FootnoteEditor.svelte";
 import LinkPopover from "./menus/LinkPopover.svelte";
 import SelectionMenu from "./menus/SelectionMenu.svelte";
 import type { MarkdownEditorState } from "./state/editor.svelte";
-import type { LinkPreview, SanitizeSchema } from "./types";
+import type { EditorConfig, LinkPreview, SanitizeSchema } from "./types";
 
 /**
  * WYSIWYG surface for the blog editor's preview pane. Owns a
@@ -39,8 +39,9 @@ import type { LinkPreview, SanitizeSchema } from "./types";
  *    dompurify) on mount and on external markdown changes (LLM chat,
  *    toggling from the markdown pane, article reload).
  * 2. Serializes back to markdown on every DOM mutation via
- *    `serializeHtmlToMarkdown`, debounced 250ms so keystrokes don't
- *    thrash. The write sets `editor.isSyncingFromWysiwyg = true`
+ *    `serializeHtmlToMarkdown`, debounced (250ms default,
+ *    `config.serializeDebounceMs`) so keystrokes don't thrash. The
+ *    write sets `editor.isSyncingFromWysiwyg = true`
  *    so the seed-effect below skips its re-seed and doesn't clobber
  *    the caret.
  * 3. Flushes any pending debounce on unmount so toggling to the
@@ -59,13 +60,18 @@ let {
 	editor,
 	sanitize,
 	loadLinkPreview,
+	config,
 }: {
 	editor: MarkdownEditorState;
 	/** Optional DOMPurify schema overrides applied to seeded markdown-HTML and pasted HTML. */
 	sanitize?: SanitizeSchema;
 	/** Optional callback that loads an OpenGraph-style preview for the link popover. No callback → no preview section. */
 	loadLinkPreview?: (url: string) => Promise<LinkPreview | null>;
+	/** Optional editor-wide configuration (e.g. serialize debounce). */
+	config?: EditorConfig;
 } = $props();
+
+const debounceMs = $derived(config?.serializeDebounceMs ?? 250);
 
 let shellRef: HTMLDivElement | null = $state(null);
 let containerRef: HTMLDivElement | null = $state(null);
@@ -223,7 +229,7 @@ function scheduleFlush() {
 	flushTimer = setTimeout(() => {
 		flushTimer = null;
 		flushToMarkdown();
-	}, 250);
+	}, debounceMs);
 }
 
 function handleInput() {

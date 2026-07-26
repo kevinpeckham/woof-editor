@@ -8,15 +8,6 @@ export type EditorConfig = {
 	 * fast typing. Default 250.
 	 */
 	serializeDebounceMs?: number;
-
-	/**
-	 * How to handle YAML frontmatter at the top of the markdown body.
-	 * Default `"ignore"` — the entire string is treated as body markdown.
-	 *
-	 * (Non-default modes land in a future minor version; for now only
-	 * `"ignore"` is implemented.)
-	 */
-	frontmatterMode?: "ignore" | "preserve" | "extract";
 };
 
 /**

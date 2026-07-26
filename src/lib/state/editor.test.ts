@@ -85,3 +85,12 @@ test("history is capped at 100 entries", () => {
 	expect(e.history[99]).toBe("150");
 	expect(e.canRedo).toBe(false);
 });
+
+test("snapshot captures current markdown with a timestamp", () => {
+	const e = new MarkdownEditorState({ markdown: "# A" });
+	e.markdownCurrent = "# B";
+	const snap = e.snapshot();
+	expect(snap.markdown).toBe("# B");
+	expect(typeof snap.timestamp).toBe("number");
+	expect(snap.timestamp).toBeGreaterThan(0);
+});

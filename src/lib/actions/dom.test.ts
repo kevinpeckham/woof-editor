@@ -166,6 +166,33 @@ describe("changeBlockType", () => {
 	});
 });
 
+describe("changeBlockType — code blocks", () => {
+	test("p → pre wraps content in <pre><code>", () => {
+		const c = mount("<p>const x = 1;</p>");
+		const p = c.querySelector("p") as HTMLElement;
+		const result = changeBlockType(p, "pre");
+		expect(result.tagName.toLowerCase()).toBe("pre");
+		expect(result.querySelector("code")?.textContent).toBe("const x = 1;");
+	});
+
+	test("pre → p unwraps the inner <code>", () => {
+		const c = mount("<pre><code>const x = 1;</code></pre>");
+		const pre = c.querySelector("pre") as HTMLElement;
+		const result = changeBlockType(pre, "p");
+		expect(result.tagName.toLowerCase()).toBe("p");
+		expect(result.querySelector("code")).toBeNull();
+		expect(result.textContent).toBe("const x = 1;");
+	});
+
+	test("pre → ul unwraps code into a single li", () => {
+		const c = mount("<pre><code>line</code></pre>");
+		const pre = c.querySelector("pre") as HTMLElement;
+		const result = changeBlockType(pre, "ul");
+		expect(result.querySelector("li")?.textContent).toBe("line");
+		expect(result.querySelector("code")).toBeNull();
+	});
+});
+
 describe("toggleBlockWrap", () => {
 	test("wraps the whole block content when not already wrapped", () => {
 		const c = mount("<p>hello</p>");

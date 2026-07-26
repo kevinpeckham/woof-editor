@@ -98,6 +98,21 @@ export function findNearestBlock(node: Node | null, container: HTMLElement): HTM
 }
 
 /**
+ * Build an empty element for `targetTag`. `pre` gets an inner `<code>`
+ * (the shape marked emits for fenced code blocks, so the serializer
+ * round-trips it) — content goes into the returned `contentHost`.
+ */
+function buildBlockShell(targetTag: string): { el: HTMLElement; contentHost: HTMLElement } {
+	const el = document.createElement(targetTag);
+	if (targetTag === "pre") {
+		const code = document.createElement("code");
+		el.appendChild(code);
+		return { contentHost: code, el };
+	}
+	return { contentHost: el, el };
+}
+
+/**
  * Convert `block` to `targetTag`, preserving inline formatting. Returns
  * the element that now stands in `block`'s place.
  *
@@ -123,6 +138,15 @@ export function changeBlockType(block: HTMLElement, targetTag: string): HTMLElem
 
 	const isTargetList = targetTag === "ul" || targetTag === "ol";
 
+	// A <pre>'s text lives inside its inner <code>; treat that inner
+	// element as the content source so converting away from a code block
+	// doesn't leave an inline <code> wrapping the whole result.
+	let contentSource: HTMLElement = block;
+	if (sourceTag === "pre") {
+		const code = block.querySelector(":scope > code");
+		if (code) contentSource = code as HTMLElement;
+	}
+
 	// Source is <li> — extract from its parent list.
 	if (sourceTag === "li") {
 		const parentList = block.parentElement;
@@ -133,8 +157,8 @@ export function changeBlockType(block: HTMLElement, targetTag: string): HTMLElem
 			parentList.replaceWith(newList);
 			return block;
 		}
-		const newEl = document.createElement(targetTag);
-		while (block.firstChild) newEl.appendChild(block.firstChild);
+		const { el: newEl, contentHost } = buildBlockShell(targetTag);
+		while (block.firstChild) contentHost.appendChild(block.firstChild);
 		if (parentList) {
 			parentList.parentElement?.insertBefore(newEl, parentList.nextSibling);
 			block.remove();
@@ -153,12 +177,12 @@ export function changeBlockType(block: HTMLElement, targetTag: string): HTMLElem
 			block.replaceWith(newList);
 			return newList;
 		}
-		const newEl = document.createElement(targetTag);
+		const { el: newEl, contentHost } = buildBlockShell(targetTag);
 		const items = Array.from(block.querySelectorAll(":scope > li"));
 		for (let i = 0; i < items.length; i++) {
 			const li = items[i];
-			while (li.firstChild) newEl.appendChild(li.firstChild);
-			if (i < items.length - 1) newEl.appendChild(document.createElement("br"));
+			while (li.firstChild) contentHost.appendChild(li.firstChild);
+			if (i < items.length - 1) contentHost.appendChild(document.createElement("br"));
 		}
 		block.replaceWith(newEl);
 		return newEl;
@@ -168,15 +192,15 @@ export function changeBlockType(block: HTMLElement, targetTag: string): HTMLElem
 	if (isTargetList) {
 		const list = document.createElement(targetTag);
 		const li = document.createElement("li");
-		while (block.firstChild) li.appendChild(block.firstChild);
+		while (contentSource.firstChild) li.appendChild(contentSource.firstChild);
 		list.appendChild(li);
 		block.replaceWith(list);
 		return list;
 	}
 
-	// Plain tag swap.
-	const newEl = document.createElement(targetTag);
-	while (block.firstChild) newEl.appendChild(block.firstChild);
+	// Plain block conversion (pre gets an inner <code> content host).
+	const { el: newEl, contentHost } = buildBlockShell(targetTag);
+	while (contentSource.firstChild) contentHost.appendChild(contentSource.firstChild);
 	block.replaceWith(newEl);
 	return newEl;
 }
@@ -262,6 +286,7 @@ export const CONVERTIBLE_TAGS_LIST: {
 	{ label: "Blockquote", tag: "blockquote" },
 	{ label: "Bulleted list", tag: "ul" },
 	{ label: "Numbered list", tag: "ol" },
+	{ label: "Code block", tag: "pre" },
 ];
 
 /**
