@@ -22,7 +22,7 @@ npm i @kevinpeckham/woof-editor
 
 Peer dependencies (install them if not already in your project):
 
-- `svelte ^5`
+- `svelte ^5.29`
 - `marked ^18`
 - `marked-footnote ^1.4`
 - `@kevinpeckham/barkdown ^0`

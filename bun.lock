@@ -38,7 +38,7 @@
         "isomorphic-dompurify": "^2",
         "marked": "^18",
         "marked-footnote": "^1.4",
-        "svelte": "^5",
+        "svelte": "^5.29.0",
       },
     },
   },
