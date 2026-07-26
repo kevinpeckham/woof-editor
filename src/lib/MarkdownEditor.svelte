@@ -1,8 +1,6 @@
 <script lang="ts">
 // fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 
-// Importing this util registers `marked-footnote` as a side effect —
-// keep so the WYSIWYG and the preview share one marked configuration.
 // Markdown ⇄ DOM codec: our published @kevinpeckham/barkdown package
 // (extracted from this component's original utils; adds tables, images,
 // and property-tested round-trip guarantees). Sanitization stays here —
