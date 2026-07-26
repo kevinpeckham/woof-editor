@@ -715,8 +715,13 @@ function handleContainerClick(e: MouseEvent) {
 // containerRef (reactive via bind:this). It runs once ref is set + any
 // time markdown changes. When the change came from us (via
 // flushToMarkdown), `isSyncingFromWysiwyg` is true and we skip.
+// `editor` itself is guarded like `ref` below: during host-driven unmount
+// (e.g. a Storybook story swap), the prop can go stale-undefined for one
+// last queued flush before this instance's own effects are torn down —
+// there's nothing to seed at that point, so bail like the ref check does.
 // $effect audited: seeds contenteditable DOM from markdown outside Svelte's template (marked/dompurify escape-region)
 $effect(() => {
+	if (!editor) return;
 	const md = editor.markdownCurrent;
 	const ref = containerRef;
 	if (!ref) return;
