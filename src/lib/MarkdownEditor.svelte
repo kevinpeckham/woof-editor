@@ -385,6 +385,27 @@ const BLOCK_TYPE_SHORTCUTS: Record<string, string> = {
 };
 
 function handleContainerKeyDown(e: KeyboardEvent) {
+	// Undo/redo: route Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, and Ctrl+Y to the
+	// state class's history. The browser's native contenteditable undo
+	// stack is useless here — imperative innerHTML re-seeds corrupt it —
+	// so the default must never run.
+	if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+		const key = e.key.toLowerCase();
+		if (key === "z" || (key === "y" && e.ctrlKey)) {
+			e.preventDefault();
+			// Snapshot any pending typing first so undo steps back from the
+			// text as-seen, not from the last debounced flush.
+			if (flushTimer) {
+				clearTimeout(flushTimer);
+				flushTimer = null;
+				flushToMarkdown();
+			}
+			const isRedo = key === "y" || e.shiftKey;
+			if (isRedo) editor.redo();
+			else editor.undo();
+			return;
+		}
+	}
 	if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
 	const tag = BLOCK_TYPE_SHORTCUTS[e.code];
 	if (!tag || !containerRef) return;
