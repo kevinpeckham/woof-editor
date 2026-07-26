@@ -4,6 +4,36 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+Hardening pass aimed at making the package genuinely consumable outside `lightning-jar/replicator`: real paste sanitization, a configurable sanitize schema, pluggable link previews (no more hardcoded endpoint), keyboard undo/redo, API-honesty fixes, fully self-contained styling, and the template-proven browser-test/tooling setup.
+
+### Added
+
+- **Paste sanitization.** Pasting into the editor now runs rich HTML through the same DOMPurify config used to seed the surface from markdown — script tags, `on*` handlers, and `javascript:`/`vbscript:`/`data:` URLs are stripped either way. Plain-text paste falls back to a text-node insert. `insertSanitizedHtmlAtSelection(html, container): boolean` is exported from `actions/dom` / the package root for consumers building custom paste handling.
+- **`sanitize` prop** on `<MarkdownEditor>` — accepts a `SanitizeSchema` (`ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR`, all optional) to widen or tighten the DOMPurify config for both the seed path and the paste path.
+- **`loadLinkPreview` prop** on `<MarkdownEditor>` — `(url: string) => Promise<LinkPreview | null>`, threaded through to `LinkPopover`. Without it, the popover shows just the URL + actions (no loading state, no fetch). New exported type `LinkPreview` (`url`, `title?`, `description?`, `image?`, `siteName?`, `favicon?`).
+- **Keyboard undo/redo.** Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, and Ctrl+Y now route to `MarkdownEditorState`'s history (`editor.undo()` / `editor.redo()`) instead of the browser's native contenteditable undo, which was broken by the component's imperative `innerHTML` re-seeds.
+- **`MarkdownEditorState.snapshot(): EditorSnapshot`** — point-in-time `{ markdown, timestamp }` snapshot for save-side hashing / dirty comparisons. (`EditorSnapshot`'s docblock referenced this method before it existed.)
+- **"Code block" block type.** `changeBlockType(block, "pre")` now wraps content in `<pre><code>` (matching the shape `marked` emits for fenced code blocks, so it round-trips through the codec), and converting *away* from a `pre` correctly unwraps the inner `<code>` instead of leaking it into the new block. `CONVERTIBLE_TAGS_LIST` gains `{ label: "Code block", tag: "pre" }`, surfaced in the Element/Context menu type submenus.
+- **Self-contained styling.** All chrome (menus, popovers, the gutter button) now ships as scoped `<style>` CSS themable via `--woof-*` custom properties, with no utility-CSS dependency anywhere in `src/lib/**`. New stable class names: `woof-editor-body`, `woof-shell`, `woof-gutter-btn`, `woof-menu-backdrop`, `woof-menu-panel`, `woof-menu-item`, `woof-menu-hr`, `woof-menu-note`, `woof-submenu`, `woof-toolbar`, `woof-toolbar-btn`, `woof-toolbar-divider`, `woof-fn-panel`, `woof-fn-textarea`, `woof-btn`, `woof-btn-primary`, `woof-btn-danger`, `woof-link-panel`. New `class` prop on `<MarkdownEditor>` for passing your site's article/typography class onto the contenteditable body.
+- **`bun run test` now includes real-browser coverage.** A `storybook` vitest project (via `@storybook/addon-vitest`'s `storybookTest`) runs 3 stories from `stories/MarkdownEditor.stories.svelte` through headless Chromium, alongside the existing 48-test node `unit` project (51 tests total). Both run in CI.
+- Tooling parity with `sk-app-template`: Biome bumped to 2.5.5, CI job timeouts added, `SECURITY.md`, Renovate config.
+
+### Changed
+
+- **BREAKING: `loadLinkPreview` replaces the hardcoded `/api/link-preview` fetch.** `LinkPopover` no longer fetches any endpoint on its own — real consumers outside replicator (where that route doesn't exist) previously got a 404 on every link click. Preview loading is now entirely consumer-provided.
+- **BREAKING: hardcoded `blog-wysiwyg` / `article-body` classes are gone.** The contenteditable root's stable class is now `woof-editor-body`; pass your own typography class via the new `class` prop instead of relying on the old fixed class names. Body typography (headings, paragraphs, lists, blockquote, links) moved to zero-specificity `:where()` fallbacks so any consumer rule wins without `!important`.
+- The 250ms debounce between a DOM mutation and its markdown serialization is now configurable via `config.serializeDebounceMs` (default remains 250) instead of a hardcoded literal.
+- Browser-test architecture: dropped `vitest-browser-svelte` direct-render in favor of the `@storybook/addon-vitest` `storybookTest` architecture (see Removed).
+
+### Fixed
+
+- `changeBlockType` round-trips code blocks correctly in both directions (see Added) — previously converting a paragraph to `pre` produced a bare `<pre>` with no inner `<code>`, which didn't serialize back to a fenced code block, and converting away from `pre` left an inline `<code>` wrapping the whole result.
+
+### Removed
+
+- **BREAKING: `frontmatterMode` removed from `EditorConfig`.** It was unimplemented (scaffolded type, no runtime) — re-added if/when a real implementation lands.
+- `vitest-browser-svelte` devDependency, replaced by `@storybook/addon-vitest` + `@vitest/browser-playwright` (see Added/Changed).
+
 ## [0.1.0] — 2026-07-21 — First stable release
 
 Marks the API stable at 0.1.x — no breaking changes will land in patch versions. Adds Storybook stories, a full README with consumer walkthrough, and promotes the package from the `alpha` dist-tag to `latest` on npm.
