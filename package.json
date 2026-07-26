@@ -33,12 +33,14 @@
 		"svelte-check": "^4.7.3",
 		"typescript": "^6.0.3",
 		"vite": "^8.1.5",
-		"vitest": "^4.1.10",
-		"vitest-browser-svelte": "^3.0.0"
+		"vitest": "^4.1.10"
 	},
 	"engines": {
 		"bun": "1.x",
 		"node": "24.x"
+	},
+	"overrides": {
+		"@vitest/browser": "4.1.10"
 	},
 	"exports": {
 		".": {

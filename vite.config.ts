@@ -1,55 +1,75 @@
 /// <reference types="vitest/config" />
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-// Node-only vitest for now. Extensive debugging session (see repo Git log
-// commits around this file) confirmed:
-//
-//   - `lightning-jar/sk-app-template` (post-PR#3) + a real Spinner.svelte
-//     test running through vitest-browser-svelte + Playwright Chromium
-//     PASSES. So the ecosystem works.
-//   - The SAME trivial Spinner test copied into woof-editor with the
-//     same versions HANGS with Chromium's GPU process pegged at 98% CPU.
-//   - Downgrading vitest-browser-svelte 3 → 2.1.1 (matching template):
-//     no help.
-//   - Swapping svelte() ↔ sveltekit() plugin: no help.
-//   - Adding the SvelteKit scaffold files template has but we didn't
-//     (hooks.client, hooks.server, +layout, app.d.ts): no help.
-//   - Nuking .svelte-kit / node_modules/.vite* + resyncing: no help.
-//   - Chromium launch args --disable-gpu --disable-software-rasterizer
-//     --disable-webgl --disable-webgl2 --in-process-gpu: no help. Still
-//     98% CPU on the GPU process.
-//   - vitest debug log (DEBUG=vitest:*) shows the browser session
-//     connects to the orchestrator and receives a "run test" dispatch;
-//     then the browser goes silent (never reports test start/finish).
-//
-// Real root cause remains unknown. Something about woof-editor's config
-// (not any file I've been able to isolate) is a load-bearing divergence
-// from the template. Options for a fresh debugging pass:
-//   - Try `@web/test-runner` instead of vitest browser mode
-//   - Try attaching to Chromium via CDP directly, skip the vitest
-//     tester iframe layer
-//   - Move real component tests into support-securelogix once the
-//     package is integrated there (that project has a proven SvelteKit
-//     setup; if tests work there against woof-editor as an external
-//     dep, we've dodged the config-divergence question entirely)
-//
-// State-class + DOM-primitive tests (36/36) all run cleanly in the node
-// project below, so pure-logic coverage is intact.
+const dirname =
+	typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+
+// Real-browser coverage lives in the `storybook` project below: it runs the
+// stories in `stories/**/*.stories.svelte` through Chromium via
+// `@storybook/addon-vitest`'s `storybookTest` plugin — the same
+// sk-app-template-proven architecture (see `/home/exedev/projects/sk-app-template/vite.config.ts`).
+// `vitest-browser-svelte` direct-render was abandoned; see CHANGELOG 0.2.0.
 export default defineConfig({
+	// storybook's own `@testing-library/dom` (a transitive dep, not ours) nests
+	// its own `aria-query` copy; without this, the browser-mode dev server
+	// serves that nested copy unbundled and its CJS named exports don't
+	// resolve through Vite's on-the-fly ESM interop. Pre-bundling it via
+	// optimizeDeps fixes the "does not provide an export named 'elementRoles'"
+	// crash on the storybook project's setup file.
+	optimizeDeps: {
+		include: ["@testing-library/dom"],
+	},
 	plugins: [svelte()],
 	test: {
-		environment: "node",
-		exclude: [
-			"src/**/*.svelte.{test,spec}.{js,ts}",
-			"node_modules/**",
-			"dist/**",
-			".svelte-kit/**",
-		],
 		expect: {
 			requireAssertions: true,
 		},
-		include: ["src/**/*.{test,spec}.{js,ts}"],
+		projects: [
+			{
+				// Node-only unit project: state-class + DOM-primitive tests.
+				extends: "./vite.config.ts",
+				test: {
+					environment: "node",
+					exclude: [
+						"src/**/*.svelte.{test,spec}.{js,ts}",
+						"node_modules/**",
+						"dist/**",
+						".svelte-kit/**",
+					],
+					include: ["src/**/*.{test,spec}.{js,ts}"],
+					name: "unit",
+				},
+			},
+			{
+				extends: true,
+				plugins: [
+					// The plugin will run tests for the stories defined in your Storybook config
+					// See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+					storybookTest({
+						configDir: path.join(dirname, ".storybook"),
+					}),
+				],
+				test: {
+					browser: {
+						enabled: true,
+						headless: true,
+						instances: [
+							{
+								browser: "chromium",
+							},
+						],
+						provider: playwright({}),
+					},
+					name: "storybook",
+				},
+			},
+		],
 	},
 });
