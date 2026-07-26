@@ -18,6 +18,7 @@ import {
 	insertFootnote,
 	insertParagraph,
 	insertPlainTextAtSelection,
+	insertSanitizedHtmlAtSelection,
 	isFirstH1,
 	isHeadingBlock,
 	parseFootnoteNum,
@@ -250,6 +251,43 @@ describe("insertPlainTextAtSelection", () => {
 		if (!otherText) throw new Error("fixture broken");
 		selectRange(otherText, 0, otherText, 3);
 		expect(insertPlainTextAtSelection("nope", c)).toBe(false);
+	});
+});
+
+describe("insertSanitizedHtmlAtSelection", () => {
+	test("inserts fragment at caret and places caret after it", () => {
+		const c = mount("<p>hello world</p>");
+		const textNode = c.querySelector("p")?.firstChild as Node;
+		selectRange(textNode, 5, textNode, 5);
+		const ok = insertSanitizedHtmlAtSelection(" <strong>brave</strong>", c);
+		expect(ok).toBe(true);
+		expect(c.querySelector("p")?.innerHTML).toBe("hello <strong>brave</strong> world");
+		// Caret sits after the inserted fragment (collapsed selection).
+		const sel = window.getSelection();
+		expect(sel?.isCollapsed).toBe(true);
+	});
+
+	test("replaces a non-collapsed selection", () => {
+		const c = mount("<p>hello world</p>");
+		const textNode = c.querySelector("p")?.firstChild as Node;
+		selectRange(textNode, 0, textNode, 5);
+		insertSanitizedHtmlAtSelection("<em>bye</em>", c);
+		expect(c.querySelector("p")?.innerHTML).toBe("<em>bye</em> world");
+	});
+
+	test("returns false when selection is outside the container", () => {
+		const c = mount("<p>inside</p>");
+		const other = mount("<p>outside</p>");
+		const textNode = other.querySelector("p")?.firstChild as Node;
+		selectRange(textNode, 0, textNode, 0);
+		expect(insertSanitizedHtmlAtSelection("<b>x</b>", c)).toBe(false);
+	});
+
+	test("returns false for empty html", () => {
+		const c = mount("<p>x</p>");
+		const textNode = c.querySelector("p")?.firstChild as Node;
+		selectRange(textNode, 0, textNode, 0);
+		expect(insertSanitizedHtmlAtSelection("", c)).toBe(false);
 	});
 });
 

@@ -14,6 +14,8 @@ import {
 	findFootnoteRef,
 	findNearestBlock,
 	getFootnoteText,
+	insertPlainTextAtSelection,
+	insertSanitizedHtmlAtSelection,
 	isFirstH1,
 	parseFootnoteNum,
 	placeCaretAtStart,
@@ -27,6 +29,7 @@ import FootnoteEditor from "./menus/FootnoteEditor.svelte";
 import LinkPopover from "./menus/LinkPopover.svelte";
 import SelectionMenu from "./menus/SelectionMenu.svelte";
 import type { MarkdownEditorState } from "./state/editor.svelte";
+import type { SanitizeSchema } from "./types";
 
 /**
  * WYSIWYG surface for the blog editor's preview pane. Owns a
@@ -52,7 +55,14 @@ import type { MarkdownEditorState } from "./state/editor.svelte";
  * is written imperatively.
  */
 
-let { editor }: { editor: MarkdownEditorState } = $props();
+let {
+	editor,
+	sanitize,
+}: {
+	editor: MarkdownEditorState;
+	/** Optional DOMPurify schema overrides applied to seeded markdown-HTML and pasted HTML. */
+	sanitize?: SanitizeSchema;
+} = $props();
 
 let shellRef: HTMLDivElement | null = $state(null);
 let containerRef: HTMLDivElement | null = $state(null);
@@ -154,13 +164,28 @@ let footnoteState = $state<{
 	y: 0,
 });
 
+// Base DOMPurify config shared by the markdown seed path and the paste
+// path. `sanitize` prop fields overlay it (consumer widening/tightening).
+const DEFAULT_SANITIZE = {
+	ADD_ATTR: ["data-footnote-ref", "data-footnotes", "id"],
+	USE_PROFILES: { html: true },
+};
+
+function sanitizeHtml(raw: string): string {
+	if (!sanitize) return DOMPurify.sanitize(raw, DEFAULT_SANITIZE);
+	return DOMPurify.sanitize(raw, {
+		...DEFAULT_SANITIZE,
+		...(sanitize.ALLOWED_TAGS ? { ALLOWED_TAGS: [...sanitize.ALLOWED_TAGS] } : {}),
+		...(sanitize.ALLOWED_ATTR ? { ALLOWED_ATTR: [...sanitize.ALLOWED_ATTR] } : {}),
+		...(sanitize.FORBID_TAGS ? { FORBID_TAGS: [...sanitize.FORBID_TAGS] } : {}),
+		...(sanitize.FORBID_ATTR ? { FORBID_ATTR: [...sanitize.FORBID_ATTR] } : {}),
+	});
+}
+
 function seedFromMarkdown(md: string) {
 	if (!containerRef) return;
 	const rawHtml = toDom(md);
-	const clean = DOMPurify.sanitize(rawHtml, {
-		ADD_ATTR: ["data-footnote-ref", "data-footnotes", "id"],
-		USE_PROFILES: { html: true },
-	});
+	const clean = sanitizeHtml(rawHtml);
 	containerRef.innerHTML = clean;
 	// Loading fresh content invalidates the tracked block.
 	activeBlock = null;
@@ -203,6 +228,29 @@ function handleInput() {
 	// Typing can move the caret to a new block (e.g. Enter). Reposition
 	// the gutter button after the browser has settled.
 	queueMicrotask(updateGutterButtonPosition);
+}
+
+/**
+ * Paste interception. Rich HTML is DOMPurify-scrubbed before insertion;
+ * plain text falls back to a text-node insert. Pastes with neither flavor
+ * (e.g. image files) fall through to the browser default — image-upload
+ * hooks are a future feature.
+ */
+function handlePaste(e: ClipboardEvent) {
+	if (!containerRef) return;
+	const html = e.clipboardData?.getData("text/html") ?? "";
+	const text = e.clipboardData?.getData("text/plain") ?? "";
+	if (!html && !text) return;
+	e.preventDefault();
+	if (html) {
+		const clean = sanitizeHtml(html);
+		if (insertSanitizedHtmlAtSelection(clean, containerRef)) {
+			scheduleFlush();
+			return;
+		}
+	}
+	if (text) insertPlainTextAtSelection(text, containerRef);
+	scheduleFlush();
 }
 
 function updateGutterButtonPosition() {
@@ -702,6 +750,7 @@ $effect(() => {
 		aria-label="Markdown editor body"
 		tabindex="0"
 		oninput={handleInput}
+		onpaste={handlePaste}
 		onmouseup={handleContainerMouseUp}
 		onkeydown={handleContainerKeyDown}
 		onkeyup={handleContainerKeyUp}

@@ -25,6 +25,7 @@ export {
 	insertFootnote,
 	insertParagraph,
 	insertPlainTextAtSelection,
+	insertSanitizedHtmlAtSelection,
 	isFirstH1,
 	isHeadingBlock,
 	parseFootnoteNum,

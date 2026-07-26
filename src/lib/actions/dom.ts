@@ -654,6 +654,36 @@ export function insertPlainTextAtSelection(text: string, container: HTMLElement)
 	return true;
 }
 
+/**
+ * Insert an already-sanitized HTML fragment at the current selection
+ * (replacing any selected content), placing the caret after the last
+ * inserted node. The caller is responsible for sanitizing `html` first —
+ * this module is deliberately DOMPurify-free. Returns false when `html`
+ * is empty or there's no usable selection inside the container.
+ */
+export function insertSanitizedHtmlAtSelection(html: string, container: HTMLElement): boolean {
+	if (!html) return false;
+	const sel = window.getSelection();
+	if (!sel || sel.rangeCount === 0) return false;
+	const range = sel.getRangeAt(0);
+	if (!container.contains(range.commonAncestorContainer)) return false;
+	range.deleteContents();
+	// A <template> parses without executing anything; with pre-sanitized
+	// input this is belt-and-suspenders.
+	const tpl = document.createElement("template");
+	tpl.innerHTML = html;
+	const fragment = tpl.content;
+	const lastNode = fragment.lastChild;
+	range.insertNode(fragment);
+	if (lastNode) {
+		range.setStartAfter(lastNode);
+		range.collapse(true);
+		sel.removeAllRanges();
+		sel.addRange(range);
+	}
+	return true;
+}
+
 /** Wrap a single-block range's contents in an `<a href>`. */
 function wrapRangeInAnchor(range: Range, url: string): void {
 	if (range.collapsed) return;
