@@ -239,6 +239,7 @@ function displayHost(href: string): string {
 		line-height: 1.35;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
@@ -249,13 +250,14 @@ function displayHost(href: string): string {
 		opacity: 0.7;
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
+		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
 	.woof-link-url {
 		margin-bottom: 0.75rem;
 		font-size: 0.75rem;
-		color: var(--woof-accent, #2563eb);
+		color: var(--woof-accent, #3b82f6);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -292,7 +294,10 @@ function displayHost(href: string): string {
 		border: none;
 		border-radius: 0.25rem;
 		color: #fff;
+		font: inherit;
+		font-size: 0.75rem;
 		font-weight: 600;
+		cursor: pointer;
 	}
 	.woof-link-btn-primary:hover {
 		filter: brightness(1.2);

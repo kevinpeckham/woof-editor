@@ -876,50 +876,53 @@ $effect(() => {
 		height: auto;
 	}
 
-	/* Bucket B — zero-specificity readable fallbacks. :where() guarantees
-	   ANY consumer rule (even a bare `h2 {}`) wins. Consumers pass their
-	   article class via the `class` prop for real typography. */
-	.woof-editor-body :global(:where(h1)) {
+	/* Bucket B — zero-specificity readable fallbacks. The whole selector
+	   (including `.woof-editor-body`) is inside `:global(:where(...))` so
+	   Svelte's per-component scoping class never attaches to it — that
+	   keeps true (0,0,0) specificity so ANY consumer rule (even a bare
+	   `h2 {}`) wins. Consumers pass their article class via the `class`
+	   prop for real typography. */
+	:global(:where(.woof-editor-body h1)) {
 		font-size: 1.75em;
 		font-weight: 700;
 		line-height: 1.15;
 		margin: 0 0 1.25rem;
 	}
-	.woof-editor-body :global(:where(h2)) {
+	:global(:where(.woof-editor-body h2)) {
 		font-size: 1.4em;
 		font-weight: 700;
 		margin: 1.75rem 0 0.75rem;
 	}
-	.woof-editor-body :global(:where(h3)) {
+	:global(:where(.woof-editor-body h3)) {
 		font-size: 1.2em;
 		font-weight: 700;
 		margin: 1.5rem 0 0.5rem;
 	}
-	.woof-editor-body :global(:where(h4, h5, h6)) {
+	:global(:where(.woof-editor-body h4, .woof-editor-body h5, .woof-editor-body h6)) {
 		font-size: 1.05em;
 		font-weight: 700;
 		margin: 1.25rem 0 0.5rem;
 	}
-	.woof-editor-body :global(:where(p)) {
+	:global(:where(.woof-editor-body p)) {
 		margin: 0 0 1rem;
 	}
-	.woof-editor-body :global(:where(ul, ol)) {
+	:global(:where(.woof-editor-body ul, .woof-editor-body ol)) {
 		margin: 0 0 1rem;
 		padding-left: 1.5rem;
 	}
-	.woof-editor-body :global(:where(ul)) {
+	:global(:where(.woof-editor-body ul)) {
 		list-style: disc;
 	}
-	.woof-editor-body :global(:where(ol)) {
+	:global(:where(.woof-editor-body ol)) {
 		list-style: decimal;
 	}
-	.woof-editor-body :global(:where(blockquote)) {
+	:global(:where(.woof-editor-body blockquote)) {
 		margin: 1rem 0;
 		padding-left: 1rem;
 		border-left: 3px solid var(--woof-accent, #3b82f6);
 		opacity: 0.85;
 	}
-	.woof-editor-body :global(:where(a)) {
+	:global(:where(.woof-editor-body a)) {
 		color: var(--woof-accent, #3b82f6);
 		text-decoration: underline;
 	}
