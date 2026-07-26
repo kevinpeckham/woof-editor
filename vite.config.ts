@@ -13,8 +13,9 @@ const dirname =
 
 // Real-browser coverage lives in the `storybook` project below: it runs the
 // stories in `stories/**/*.stories.svelte` through Chromium via
-// `@storybook/addon-vitest`'s `storybookTest` plugin — the same
-// sk-app-template-proven architecture (see `/home/exedev/projects/sk-app-template/vite.config.ts`).
+// `@storybook/addon-vitest`'s `storybookTest` plugin — mirroring the vite
+// config in kevinpeckham's `sk-app-template`, where this architecture is
+// already proven.
 // `vitest-browser-svelte` direct-render was abandoned; see CHANGELOG 0.2.0.
 export default defineConfig({
 	// storybook's own `@testing-library/dom` (a transitive dep, not ours) nests

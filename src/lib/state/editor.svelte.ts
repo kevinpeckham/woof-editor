@@ -127,6 +127,14 @@ export class MarkdownEditorState {
 	/**
 	 * Point-in-time snapshot of the current markdown, suitable for
 	 * save-side hashing / dirty comparisons.
+	 *
+	 * Reflects `markdownCurrent`, which the WYSIWYG surface writes on a
+	 * debounce (`config.serializeDebounceMs`, default 250ms). So a snapshot
+	 * taken mid-typing can lag the on-screen text by up to that debounce —
+	 * the most recent keystrokes may not be in it yet. For a save path that
+	 * must not drop the last word, either take the snapshot after the
+	 * editor has unmounted (it flushes on destroy) or leave a debounce's
+	 * worth of delay between the last input and the read.
 	 */
 	snapshot(): EditorSnapshot {
 		return { markdown: this.markdownCurrent, timestamp: Date.now() };
