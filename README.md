@@ -193,13 +193,14 @@ Sanitization is **always on** and cannot be disabled; the `sanitize` prop only a
 />
 ```
 
-That example is a genuine tightening: because it provides `ALLOWED_TAGS`, the resulting config **replaces** the default `html` profile rather than adding to it — so headings, blockquotes, images, tables and everything else outside that six-tag list are stripped (their text content is kept). Note this means the editor will no longer round-trip markdown it can't represent; only narrow the allowlist to tags your content actually uses.
+That example is a genuine tightening: because it provides `ALLOWED_TAGS`, the resulting config **replaces** the default `html` profile rather than adding to it — so headings, blockquotes, images, tables and everything else outside that six-tag list are stripped (their text content is kept). It does *not* supply `ALLOWED_ATTR`, so that dimension is pinned to the html profile's own attribute list (see below) — attributes stay exactly as tight as the default, they don't widen. Note this means the editor will no longer round-trip markdown it can't represent; only narrow the allowlist to tags your content actually uses.
 
 `sanitize` accepts `ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR`, all optional:
 
 - Providing **`ALLOWED_TAGS` and/or `ALLOWED_ATTR`** drops `USE_PROFILES` from the config. This is required, not incidental: DOMPurify resolves `USE_PROFILES` *after* those fields and overwrites them with the profile's own allowlists, so a config carrying both would make your allowlist a silent no-op.
+- Providing **only one** of `ALLOWED_TAGS` / `ALLOWED_ATTR` pins the *other* dimension to the html profile's own list (vendored as `HTML_PROFILE_TAGS` / `HTML_PROFILE_ATTRS`) rather than leaving it unset — an unset field would otherwise fall back to DOMPurify's full built-in default (html ∪ svg ∪ svgFilters ∪ mathMl), which is *wider* than the html profile and would silently undo the tightening the other field asked for. So supplying one dimension never widens the one you didn't touch.
 - Providing **only `FORBID_TAGS` / `FORBID_ATTR`** keeps the default `html` profile and subtracts from it.
-- The footnote attributes stay allowed under either shape — they're applied via `ADD_ATTR`, which is additive rather than replacing.
+- The footnote attributes stay allowed under any shape — they're applied via `ADD_ATTR`, which is additive rather than replacing.
 
 Applies to both the seed path and the paste path.
 

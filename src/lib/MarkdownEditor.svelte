@@ -769,9 +769,13 @@ $effect(() => {
 //
 // Behaviour is unchanged: `updateActiveBlockFromSelection` already
 // early-returns on `!containerRef`, so listening from mount rather than
-// from ref-bind time is equivalent; `scroll` is not cancelable, so dropping
-// `{ passive: true }` costs nothing; and `<svelte:document>` is browser-only,
-// so SSR is unaffected.
+// from ref-bind time is equivalent; `updateGutterButtonPosition` never
+// calls `preventDefault()`, so behavior is identical whether or not the
+// listener is registered `{ passive: true }` — dropping it just means the
+// browser loses the passive hint (it can no longer skip waiting on this
+// specific listener before it starts scrolling), not that anything
+// observable changes; and `<svelte:document>` is browser-only, so SSR is
+// unaffected.
 
 // Flush any pending debounce on unmount so toggling away never drops work.
 // `onDestroy` is the honest primitive for teardown-only work; in Svelte 5 it
