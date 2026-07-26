@@ -400,9 +400,24 @@ function handleContainerKeyDown(e: KeyboardEvent) {
 				flushTimer = null;
 				flushToMarkdown();
 			}
+			// canUndo/canRedo are read AFTER the flush — the flush may have
+			// pushed a history entry, which is exactly what makes an
+			// otherwise-impossible undo possible.
 			const isRedo = key === "y" || e.shiftKey;
-			if (isRedo) editor.redo();
-			else editor.undo();
+			if (isRedo ? editor.canRedo : editor.canUndo) {
+				// The flush's sync flag describes ITS write; the undo/redo write
+				// below is an external change the seed effect must apply. Both
+				// writes land in one batch, so without this the effect sees a
+				// stale `true` and skips — undo looks dead in the
+				// "typo -> instant Cmd+Z" case. Clear synchronously (the clear
+				// queued by flushToMarkdown is idempotent). Gated on
+				// canUndo/canRedo so a no-op undo can't ungate a re-seed of the
+				// text we just serialized out of the DOM, which would rebuild
+				// innerHTML and eat the caret mid-typing.
+				editor.isSyncingFromWysiwyg = false;
+				if (isRedo) editor.redo();
+				else editor.undo();
+			}
 			return;
 		}
 	}
