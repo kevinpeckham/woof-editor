@@ -1,5 +1,5 @@
 <script lang="ts">
-// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
+// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- one $effect below: popover show/hide + viewport clamping. It carries the heaviest residual smell in the package (five $state writes and a hand-rolled `fetchedFor` memo); the smell, its two behaviour deltas, and the planned 0.3 replacement are documented at the site rather than excused. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 import type { LinkPreview } from "../types";
 import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
 
@@ -74,7 +74,33 @@ async function loadPreview(href: string) {
 	}
 }
 
-// $effect audited: drives native popover show/hide, viewport-clamped positioning, and kicks off link-preview fetch on open
+// $effect audited: drives native popover show/hide, viewport-clamped
+// positioning, and kicks off the link-preview fetch on open. The
+// showPopover()/hidePopover() + post-paint clamp core is legitimate.
+//
+// KNOWN SMELL, and the heaviest one in this package — deliberately left for
+// 0.3. This effect performs five $state writes (`positioned`, `editing`,
+// `editValue`, `fetchedFor`, plus `loading`/`preview` transitively via
+// loadPreview) and launches an async side effect. `fetchedFor` is the tell:
+// a hand-rolled "have I already done this?" memo exists only to stop the
+// effect re-firing, which means the effect is being used to model an EDGE
+// (the open transition) with a primitive that models a STATE.
+//
+// Planned 0.3 shape: extract a mount-scoped panel rendered under
+// {#if linkState.open}, with `editing`/`editValue`/`positioned` as ordinary
+// local $state (correct-by-construction at mount) and the fetch fired once
+// on mount. `fetchedFor` disappears entirely and this effect collapses to a
+// two-liner. Two behaviour deltas to accept deliberately when doing it:
+// today `fetchedFor` caches a preview across close/reopen of the same href
+// (mount-scoped state would refetch), and today a FAILED fetch is never
+// retried on reopen because `fetchedFor` is set before the await and never
+// reset — arguably a bug the refactor fixes for free.
+//
+// Deferred because LinkPopover is a public export with a consumer-facing
+// `loadLinkPreview` contract, uses popover="auto" light-dismiss (the
+// ontoggle -> onClose bridge interacts with mount timing), and relies on the
+// `unpositioned` class to hide the pre-clamp flash — mount/unmount
+// reordering touches all three at once, with no component tests.
 $effect(() => {
 	if (linkState.open) {
 		positioned = false;

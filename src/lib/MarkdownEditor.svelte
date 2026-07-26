@@ -1,5 +1,5 @@
 <script lang="ts">
-// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
+// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- exactly one $effect remains in this file (the contenteditable seed); its justification AND its two known residual smells are documented at the site. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 
 // Markdown ⇄ DOM codec: our published @kevinpeckham/barkdown package
 // (extracted from this component's original utils; adds tables, images,
@@ -7,7 +7,7 @@
 // it is deliberately out of the codec's scope.
 import { toDom, toMarkdown } from "@kevinpeckham/barkdown";
 import DOMPurify from "isomorphic-dompurify";
-import { untrack } from "svelte";
+import { onDestroy, untrack } from "svelte";
 import {
 	changeBlockType,
 	findFootnoteDefinition,
@@ -725,7 +725,25 @@ function handleContainerClick(e: MouseEvent) {
 // (e.g. a Storybook story swap), the prop can go stale-undefined for one
 // last queued flush before this instance's own effects are torn down —
 // there's nothing to seed at that point, so bail like the ref check does.
-// $effect audited: seeds contenteditable DOM from markdown outside Svelte's template (marked/dompurify escape-region)
+// $effect audited: seeds contenteditable DOM from markdown outside Svelte's
+// template (marked/dompurify escape-region). This is the last remaining
+// $effect in this file and its imperative core is legitimate — no rune can
+// write innerHTML into a subtree Svelte deliberately does not own.
+//
+// KNOWN SMELLS, deliberately left for 0.3 (both need coverage first):
+//  1. The `isSyncingFromWysiwyg` gate is a tick-scoped signal describing a
+//     write-scoped fact, and it leans on an undocumented Svelte detail (the
+//     flush microtask is enqueued at the batch's first write). Any second
+//     write landing in the same batch is swallowed — a consumer streaming
+//     markdown in the same tick as a debounce flush hits the same class of
+//     bug the undo path did. Planned replacement: a non-reactive
+//     `lastEmitted` identity gate (`if (md === lastEmitted) return;`), which
+//     answers "does my DOM already show this text?" instead of "did I write
+//     recently?" and cannot be broken by batching or scheduler changes.
+//  2. `seedFromMarkdown` writes `activeBlock`/`gutterButtonTop` state from
+//     inside the effect (hence the `untrack` wrapper). `gutterButtonTop` is
+//     fully derivable from `activeBlock` + a scroll/resize epoch; deriving it
+//     leaves only `activeBlock = null` here.
 $effect(() => {
 	if (!editor) return;
 	const md = editor.markdownCurrent;
@@ -741,32 +759,35 @@ $effect(() => {
 	});
 });
 
-// Wire selectionchange globally + scroll listener locally. Both drive
-// gutter button positioning + activeBlock tracking.
-// $effect audited: attaches document selectionchange + container scroll listeners on a bind:this ref with cleanup
-$effect(() => {
-	if (!containerRef) return;
-	const onSelChange = () => updateActiveBlockFromSelection();
-	const onScroll = () => updateGutterButtonPosition();
-	document.addEventListener("selectionchange", onSelChange);
-	containerRef.addEventListener("scroll", onScroll, { passive: true });
-	return () => {
-		document.removeEventListener("selectionchange", onSelChange);
-		containerRef?.removeEventListener("scroll", onScroll);
-	};
-});
+// selectionchange + scroll used to be an $effect that called
+// addEventListener on the bind:this ref. Both now have declarative homes —
+// `<svelte:document onselectionchange>` in the markup and an `onscroll`
+// attribute on the contenteditable div — which also deletes a latent
+// teardown bug (the old cleanup re-read the reactive `containerRef` rather
+// than the element the listener was attached to, so a re-bound/nulled ref
+// would have leaked the scroll listener).
+//
+// Behaviour is unchanged: `updateActiveBlockFromSelection` already
+// early-returns on `!containerRef`, so listening from mount rather than
+// from ref-bind time is equivalent; `scroll` is not cancelable, so dropping
+// `{ passive: true }` costs nothing; and `<svelte:document>` is browser-only,
+// so SSR is unaffected.
 
-// Flush any pending debounce on unmount.
-// $effect audited: unmount cleanup: flushes pending debounced markdown serialization timer
-$effect(() => {
-	return () => {
-		if (flushTimer) {
-			clearTimeout(flushTimer);
-			flushToMarkdown();
-		}
-	};
+// Flush any pending debounce on unmount so toggling away never drops work.
+// `onDestroy` is the honest primitive for teardown-only work; in Svelte 5 it
+// is implemented as an effect teardown, so this is the same mechanism and
+// the same ordering the bare `$effect(() => () => …)` had.
+onDestroy(() => {
+	if (flushTimer) {
+		clearTimeout(flushTimer);
+		flushToMarkdown();
+	}
 });
 </script>
+
+<!-- Caret tracking: `selectionchange` only fires on `document`, so it needs
+     `<svelte:document>` rather than an element attribute. -->
+<svelte:document onselectionchange={updateActiveBlockFromSelection} />
 
 <!-- woof-shell: the positioning parent for the gutter button (`position:
      relative`, so the button's `position: absolute; left: -38px` anchors
@@ -797,6 +818,7 @@ $effect(() => {
 		tabindex="0"
 		oninput={handleInput}
 		onpaste={handlePaste}
+		onscroll={updateGutterButtonPosition}
 		onmouseup={handleContainerMouseUp}
 		onkeydown={handleContainerKeyDown}
 		onkeyup={handleContainerKeyUp}

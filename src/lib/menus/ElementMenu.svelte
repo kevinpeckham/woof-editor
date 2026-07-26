@@ -1,5 +1,5 @@
 <script lang="ts">
-// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
+// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- two $effects below: popover show/hide + viewport clamping (legitimate imperative APIs) and a submenu re-clamp. Both are documented at the site, INCLUDING the residual `showTypeSubmenu = false` state-write smell and its planned 0.3 replacement. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 import {
 	CONVERTIBLE_TAGS_LIST,
 	changeBlockType,
@@ -86,7 +86,24 @@ function clampToViewport() {
  * Drive the native popover open/close from `menuState.open`. Fit-to-
  * viewport after render so tall submenu content doesn't clip.
  */
-// $effect audited: drives native popover show/hide and imperative viewport-clamped positioning of the element menu
+// $effect audited: drives native popover show/hide and imperative
+// viewport-clamped positioning of the element menu. showPopover()/hidePopover()
+// are imperative-only (the popover attribute has no declarative "open"
+// binding) and clampToViewport() measures after paint, so the core is
+// legitimate.
+//
+// KNOWN SMELL, deliberately left for 0.3: `showTypeSubmenu = false` is a
+// $state write inside an effect, and it is the direct cause of the SECOND
+// effect below — one effect cannot both read `showTypeSubmenu` and reset it
+// without immediately closing a submenu the user just opened.
+//
+// The fix is NOT to move the reset into close(): the parent also closes this
+// menu externally (handleContextMenu and the block-type shortcut in
+// handleContainerKeyDown both clear `menuState` directly), so the reset would be
+// missed and the menu would reopen with its submenu already expanded.
+// Planned 0.3 shape: extract a mount-scoped panel component rendered under
+// {#if menuState.open}, making `showTypeSubmenu` ordinary local $state that is
+// fresh on every mount — the reset and this effect pair both disappear.
 $effect(() => {
 	if (menuState.open) {
 		showTypeSubmenu = false;
@@ -97,10 +114,18 @@ $effect(() => {
 	}
 });
 
-// $effect audited: imperatively re-clamps popover position to viewport after submenu toggle changes menu height
+// $effect audited: imperatively re-clamps popover position to viewport after
+// the submenu toggle changes the menu's height. Measuring
+// getBoundingClientRect() after paint has no declarative form.
+//
+// Re-clamps on BOTH transitions. Gating on `showTypeSubmenu` being true (as
+// this did) skipped the collapse: a menu flipped upward by
+// fitPopoverToViewport's bottom-overflow branch stayed at the flipped-up
+// position after the submenu closed and the menu got short again.
 $effect(() => {
-	// Recompute clamp whenever the submenu toggles (menu height changed).
-	if (menuState.open && showTypeSubmenu) {
+	// Referenced unconditionally so the effect depends on it in both directions.
+	void showTypeSubmenu;
+	if (menuState.open) {
 		queueMicrotask(clampToViewport);
 	}
 });

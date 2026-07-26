@@ -1,5 +1,5 @@
 <script lang="ts">
-// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
+// fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- one $effect below: popover show/hide + viewport clamping + textarea focus/select (all imperative-only APIs). Its residual prop->state smell (`text = footnoteState.initialText`), why a $derived is the WRONG fix, and the planned 0.3 replacement are all documented at the site. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
 
 /**
@@ -57,7 +57,31 @@ function clampToViewport() {
 	innerEl.style.top = `${clamped.y}px`;
 }
 
-// $effect audited: drives native popover show/hide, viewport-clamped positioning, and textarea focus/select on open
+// $effect audited: drives native popover show/hide, viewport-clamped
+// positioning, and textarea focus/select on open. showPopover()/hidePopover(),
+// post-paint measurement, and focus()/select() are all imperative-only APIs,
+// so that part is legitimate.
+//
+// KNOWN SMELL, deliberately left for 0.3: `text = footnoteState.initialText`
+// is a prop->state synchronisation write inside an effect — the textbook
+// anti-pattern the effect policy exists to catch.
+//
+// It is NOT replaceable with `let text = $derived(footnoteState.initialText)`.
+// A derived only recomputes when its dependency CHANGES, so reopening the
+// SAME footnote after the author typed and cancelled hands back an identical
+// string, the derived never recomputes, and the popover shows the abandoned
+// draft. The effect re-seeds correctly today only because it also depends on
+// `footnoteState.open`.
+//
+// Planned 0.3 shape: extract a mount-scoped panel rendered under
+// {#if footnoteState.open} with `let text = $state(initialText)` inside.
+// Open = mount = unconditional fresh seed, including the same-footnote
+// reopen case. ({#key footnoteState.num} is NOT sufficient, for the same
+// reason the derived isn't: reopening the same num doesn't change the key.)
+// Deferred because moving the panel behind {#if} also moves when
+// showPopover() may be called and changes the popover="manual" +
+// backdrop-click + Escape lifecycle, with no component tests to catch a
+// regression.
 $effect(() => {
 	if (footnoteState.open) {
 		text = footnoteState.initialText;
