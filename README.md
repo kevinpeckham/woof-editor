@@ -193,7 +193,7 @@ The default config uses DOMPurify's `USE_PROFILES: { html: true }` plus a small 
 
 `sanitize` accepts `ALLOWED_TAGS` / `ALLOWED_ATTR` / `FORBID_TAGS` / `FORBID_ATTR` (all optional — each field you provide overrides DOMPurify's default for that field; the footnote attributes stay allowed regardless, since they're added on top rather than replaced). Applies to both the seed path and the paste path.
 
-To skip sanitization/rich-paste entirely for a given paste, right-click and choose **Paste as plain text** from the context menu (or use the browser's native Cmd/Ctrl+Shift+V where supported) — it inserts the clipboard's plain-text flavor as a text node, bypassing HTML parsing altogether.
+To skip sanitization/rich-paste entirely for a given paste, right-click and choose **Paste as plain text** from the context menu — it reads the clipboard's plain-text flavor directly and inserts it as a text node. (The editor's own paste handler intercepts every paste event and prefers the HTML flavor whenever the clipboard offers one, so there's no browser-shortcut alternative this package can guarantee — the context menu entry is the reliable plain-paste path.)
 
 ## Styling & theming
 
@@ -218,14 +218,20 @@ The editor's chrome (menus, popovers, the gutter button) is fully self-contained
 Body typography (headings, paragraphs, lists, blockquote, links) is deliberately shipped at **zero CSS specificity** — wrapped in `:where()` — so it's a readable fallback, not something you have to fight. Pass your site's article/typography class via the `class` prop and it wins automatically:
 
 ```svelte
-<div style="--woof-accent: #16a34a; padding-left: 48px;">
+<div style="--woof-accent: #16a34a; --woof-menu-bg: #0b3d0b; padding-left: 48px;">
   <MarkdownEditor {editor} class="article-body" />
 </div>
 ```
 
-That example also sets two custom properties on a wrapper (accent color) and shows the required gutter clearance (next paragraph).
+That example sets two custom properties on a wrapper (accent color, dark-menu background) and shows the required gutter clearance (next paragraph).
 
-Stable class names you can target from outside: `woof-editor-body` (the contenteditable root — this is what `class` gets appended to), `woof-menu-panel` (the panel shared by all five menus/popovers), `woof-gutter-btn` (the per-block ⋮-replacement button in the left gutter).
+Stable class names you can target from outside:
+
+- `woof-editor-body` — the contenteditable root; this is what the `class` prop gets appended to.
+- `woof-gutter-btn` — the per-block ⋮-replacement button in the left gutter.
+- `woof-menu-panel` — the dark chrome panel shared by the Element, Selection, and Context menus.
+- `woof-link-panel` — the light link popover (a separate panel, not `woof-menu-panel`).
+- `woof-fn-panel` — the footnote editor's dark panel (a separate panel from `woof-menu-panel`, though it shares the same `--woof-menu-*` tokens).
 
 **Gutter clearance:** the block-type gutter button is positioned `left: -38px` relative to the editor's shell, so it renders outside the editor's own box. Give the editor's wrapper at least `padding-left: 38px` (48px is comfortable) or the button will be clipped or invisible.
 
