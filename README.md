@@ -309,6 +309,8 @@ bun run check           # svelte-check
 bun run biome           # lint + format
 bun run build           # svelte-package + publint
 bun run build-storybook # static storybook site
+bun run build:site      # prerendered static demo page (adapter-static), output in build/
+bun run preview:site    # serve that build locally for a final check
 ```
 
 `bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (48 tests over the state class + DOM primitives) and a `storybook` project that drives the 3 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (51 tests total). Both run in CI.

@@ -4,6 +4,10 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+
+- Demo site: prerendered static playground at the repo root routes — `bun run build:site` / `preview:site`.
+
 ## [0.2.0] — 2026-07-26 — Consumable-anywhere hardening
 
 Hardening pass aimed at making the package genuinely consumable outside `lightning-jar/replicator`: real paste sanitization, a configurable sanitize schema, pluggable link previews (no more hardcoded endpoint), keyboard undo/redo, API-honesty fixes, fully self-contained styling, and the template-proven browser-test/tooling setup.
