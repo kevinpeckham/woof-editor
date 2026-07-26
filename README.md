@@ -313,7 +313,7 @@ bun run build:site      # prerendered static demo page (adapter-static), output 
 bun run preview:site    # serve that build locally for a final check
 ```
 
-`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (48 tests over the state class + DOM primitives) and a `storybook` project that drives the 3 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (51 tests total). Both run in CI.
+`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (68 tests over the state class + DOM primitives) and a `storybook` project that drives the 4 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (72 tests total). Both run in CI.
 
 ## Known limitations
 
