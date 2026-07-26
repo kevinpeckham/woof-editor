@@ -40,3 +40,18 @@ export type SanitizeSchema = {
 	FORBID_TAGS?: readonly string[];
 	FORBID_ATTR?: readonly string[];
 };
+
+/**
+ * OpenGraph-ish preview of a link target, rendered inside the link
+ * popover. Returned by the consumer's `loadLinkPreview` callback —
+ * all fields except `url` are optional; missing fields simply don't
+ * render.
+ */
+export type LinkPreview = {
+	url: string;
+	title?: string;
+	description?: string;
+	image?: string;
+	siteName?: string;
+	favicon?: string;
+};

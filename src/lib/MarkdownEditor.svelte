@@ -29,7 +29,7 @@ import FootnoteEditor from "./menus/FootnoteEditor.svelte";
 import LinkPopover from "./menus/LinkPopover.svelte";
 import SelectionMenu from "./menus/SelectionMenu.svelte";
 import type { MarkdownEditorState } from "./state/editor.svelte";
-import type { SanitizeSchema } from "./types";
+import type { LinkPreview, SanitizeSchema } from "./types";
 
 /**
  * WYSIWYG surface for the blog editor's preview pane. Owns a
@@ -58,10 +58,13 @@ import type { SanitizeSchema } from "./types";
 let {
 	editor,
 	sanitize,
+	loadLinkPreview,
 }: {
 	editor: MarkdownEditorState;
 	/** Optional DOMPurify schema overrides applied to seeded markdown-HTML and pasted HTML. */
 	sanitize?: SanitizeSchema;
+	/** Optional callback that loads an OpenGraph-style preview for the link popover. No callback → no preview section. */
+	loadLinkPreview?: (url: string) => Promise<LinkPreview | null>;
 } = $props();
 
 let shellRef: HTMLDivElement | null = $state(null);
@@ -783,6 +786,7 @@ $effect(() => {
 />
 <LinkPopover
 	{linkState}
+	{loadLinkPreview}
 	onOpenExternal={handleLinkOpenExternal}
 	onEditHref={handleLinkEditHref}
 	onRemove={handleLinkRemove}

@@ -1,12 +1,15 @@
 <script lang="ts">
 // fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- every $effect below is audited (see per-site "$effect audited" comments); per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
+import type { LinkPreview } from "../types";
 import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
 
 /**
  * Link popover for the blog WYSIWYG. Opens when the author clicks a plain
- * `<a href>` in the preview. Fetches an OpenGraph preview of the target
- * (via `/api/link-preview`) and offers two actions: open the URL in a new
- * tab, or edit the link (change href / remove).
+ * `<a href>` in the preview. Preview loading is consumer-provided via the
+ * `loadLinkPreview` prop — there is no built-in endpoint. Without a
+ * callback, the popover shows just the URL + actions (no loading state,
+ * no fetch). Offers two actions: open the URL in a new tab, or edit the
+ * link (change href / remove).
  *
  * The panel itself is a native `popover="auto"` (light-dismiss on outside
  * click + Escape) positioned with `fixed` coords near the click point.
@@ -21,26 +24,19 @@ interface LinkState {
 
 let {
 	linkState,
+	loadLinkPreview,
 	onOpenExternal,
 	onEditHref,
 	onRemove,
 	onClose,
 }: {
 	linkState: LinkState;
+	loadLinkPreview?: (url: string) => Promise<LinkPreview | null>;
 	onOpenExternal: () => void;
 	onEditHref: (nextHref: string) => void;
 	onRemove: () => void;
 	onClose: () => void;
 } = $props();
-
-interface Preview {
-	url: string;
-	title: string;
-	description: string;
-	image: string;
-	siteName: string;
-	favicon: string;
-}
 
 let popoverEl: HTMLDivElement | null = $state(null);
 let positioned = $state(false);
@@ -49,7 +45,7 @@ let editing = $state(false);
 let editValue = $state("");
 
 let loading = $state(false);
-let preview = $state<Preview | null>(null);
+let preview = $state<LinkPreview | null>(null);
 let fetchedFor = $state("");
 
 function clampToViewport() {
@@ -65,12 +61,11 @@ function clampToViewport() {
 }
 
 async function loadPreview(href: string) {
-	if (!href) return;
+	if (!href || !loadLinkPreview) return;
 	loading = true;
 	preview = null;
 	try {
-		const resp = await fetch(`/api/link-preview?url=${encodeURIComponent(href)}`);
-		if (resp.ok) preview = (await resp.json()) as Preview;
+		preview = await loadLinkPreview(href);
 	} catch {
 		preview = null;
 	} finally {
@@ -87,7 +82,7 @@ $effect(() => {
 		editValue = linkState.href;
 		popoverEl?.showPopover?.();
 		queueMicrotask(clampToViewport);
-		if (linkState.href && linkState.href !== fetchedFor) {
+		if (loadLinkPreview && linkState.href && linkState.href !== fetchedFor) {
 			fetchedFor = linkState.href;
 			void loadPreview(linkState.href);
 		}
