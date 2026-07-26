@@ -1,0 +1,74 @@
+{
+	// Renovate Bot config — JSON5 so comments survive. Pairs with the
+	// Mend Renovate GitHub App (free on public repos). See full schema:
+	//   https://docs.renovatebot.com/configuration-options/
+	$schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+	// Best-practice defaults + a single "Dependency Dashboard" tracker issue
+	// instead of an overwhelming PR list + semantic commit prefixes (chore,
+	// fix, etc.) so the changelog stays parseable.
+	extends: [
+		"config:recommended",
+		":dependencyDashboard",
+		":semanticCommits",
+	],
+
+	labels: ["dependencies"],
+	prConcurrentLimit: 10,
+	prHourlyLimit: 0,
+
+	// Off-hours batch so PR notifications don't disrupt the work day. UTC
+	// by default — adjust `timezone` and the schedule strings for your
+	// team's local hours. See https://docs.renovatebot.com/configuration-options/#timezone
+	schedule: ["before 6am every weekday"],
+
+	// Re-resolve bun.lock weekly so transitive hashes / indirect deps stay
+	// fresh even when no direct dep changed. Disable if it generates too
+	// much noise for your fork.
+	lockFileMaintenance: {
+		enabled: true,
+		schedule: ["before 6am on monday"],
+	},
+
+	// Group related packages into a single PR to cut review noise. Each
+	// group becomes ONE PR per release cadence (typically weekly) covering
+	// every package in the group that has a pending update.
+	packageRules: [
+		{
+			groupName: "Storybook",
+			matchPackageNames: [
+				"/^@storybook//",
+				"/^@chromatic-com/storybook$/",
+				"/^storybook$/",
+			],
+		},
+		{
+			groupName: "Vitest",
+			matchPackageNames: ["/^vitest$/", "/^@vitest//", "/^vitest-/"],
+		},
+		{
+			groupName: "SvelteKit",
+			matchPackageNames: ["/^svelte$/", "/^svelte-check$/", "/^@sveltejs//"],
+		},
+		{
+			groupName: "Biome",
+			matchPackageNames: ["/^@biomejs//"],
+		},
+		{
+			groupName: "GitHub Actions",
+			matchManagers: ["github-actions"],
+		},
+
+		// Auto-merge example (commented out — opt in when you trust your
+		// test suite). Patch updates to devDependencies typically can't
+		// break runtime behaviour; if `bun run test` + biome + fallow all
+		// pass, the PR auto-merges.
+		// {
+		// 	matchDepTypes: ["devDependencies"],
+		// 	matchUpdateTypes: ["patch"],
+		// 	automerge: true,
+		// 	automergeType: "pr",
+		// 	platformAutomerge: true,
+		// },
+	],
+}
