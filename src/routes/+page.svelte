@@ -102,47 +102,59 @@ const editor = new MarkdownEditorState({ markdown: showcaseMarkdown });
 
 	<main>
 		<section class="playground" aria-labelledby="playground-heading">
-			<h2 id="playground-heading">Live playground</h2>
-
-			<div class="toolbar" role="toolbar" aria-label="Editor controls">
-				<button type="button" onclick={() => editor.undo()} disabled={!editor.canUndo}>
-					Undo
-				</button>
-				<button type="button" onclick={() => editor.redo()} disabled={!editor.canRedo}>
-					Redo
-				</button>
-				{#if editor.hasEdits}
-					<span class="dirty" role="status">Unsaved changes</span>
-				{/if}
-				<button
-					type="button"
-					class="save-btn"
-					onclick={() => editor.markAsSaved()}
-					disabled={!editor.hasEdits}
-				>
-					Mark saved
-				</button>
+			<!-- Two column widths inside one section: `.playground-col` (720px)
+			     matches the text column every other section uses, so the heading
+			     and the caption/shortcuts row share the same left edge as
+			     "Why"/"Usage". `.playground-wide` (1040px) is a deliberate
+			     breakout for the toolbar + two-pane grid, which need the extra
+			     width — it starts to the left of the text column on purpose. -->
+			<div class="playground-col">
+				<h2 id="playground-heading">Live playground</h2>
 			</div>
 
-			<div class="panes">
-				<div class="sheet">
-					<MarkdownEditor {editor} class="demo-article" />
+			<div class="playground-wide">
+				<div class="toolbar" role="toolbar" aria-label="Editor controls">
+					<button type="button" onclick={() => editor.undo()} disabled={!editor.canUndo}>
+						Undo
+					</button>
+					<button type="button" onclick={() => editor.redo()} disabled={!editor.canRedo}>
+						Redo
+					</button>
+					{#if editor.hasEdits}
+						<span class="dirty" role="status">Unsaved changes</span>
+					{/if}
+					<button
+						type="button"
+						class="save-btn"
+						onclick={() => editor.markAsSaved()}
+						disabled={!editor.hasEdits}
+					>
+						Mark saved
+					</button>
 				</div>
-				<div class="source-pane">
-					<p class="source-label">Serialized markdown (live)</p>
-					<pre class="source-code">{editor.markdownCurrent}</pre>
+
+				<div class="panes">
+					<div class="sheet">
+						<MarkdownEditor {editor} class="demo-article" />
+					</div>
+					<div class="source-pane">
+						<p class="source-label">Serialized markdown (live)</p>
+						<pre class="source-code">{editor.markdownCurrent}</pre>
+					</div>
 				</div>
 			</div>
 
-			<p class="theming-note">
-				This page styles the document via the <code>class</code> prop; menus are themed with two CSS
-				variables.
-			</p>
+			<div class="playground-col">
+				<p class="theming-note">
+					This page styles the document via the <code>class</code> prop; menus are themed with two
+					CSS variables.
+				</p>
 
-			<div class="shortcuts">
-				<span><kbd>⌘/Ctrl</kbd>+<kbd>Z</kbd> undo</span>
-				<span><kbd>⌘/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redo</span>
-				<span><kbd>⌘/Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>0/2/3/4</kbd> block types</span>
+				<div class="shortcuts">
+					<span><kbd>⌘/Ctrl</kbd>+<kbd>Z</kbd> undo</span>
+					<span><kbd>⌘/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> redo</span>
+					<span><kbd>⌘/Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>0/2/3/4</kbd> block types</span>
+				</div>
 			</div>
 		</section>
 
@@ -192,25 +204,42 @@ const editor = new MarkdownEditorState({ markdown: showcaseMarkdown });
 		--surface: #ffffff;
 	}
 
+	/* `margin-inline` (not the `margin: 0 auto` shorthand) deliberately: the
+	   shorthand sets margin-top/bottom to 0 too, which — because a class
+	   selector beats the `main > * + *` rhythm rule below on specificity —
+	   silently overrode that rule's margin-top on `.why`/`.usage`, collapsing
+	   the vertical rhythm between sections to 0. Setting only the inline
+	   (left/right) margins here leaves margin-top unset, so `main > * + *`
+	   is the sole rule controlling it and applies as intended. */
 	.hero,
 	.why,
-	.usage {
-		max-width: 720px;
-		margin: 0 auto;
-		padding: 0 1.25rem;
+	.usage,
+	.playground-col,
+	.playground-wide {
+		margin-inline: auto;
+		padding-inline: 1.25rem;
 	}
 
-	.playground {
+	.hero,
+	.why,
+	.usage,
+	.playground-col {
+		max-width: 720px;
+	}
+
+	/* Deliberate breakout: wider than the 720px text column so the toolbar
+	   and two-pane grid have room, while `.playground-col` above/below it
+	   keeps the heading and caption/shortcuts row on the same left edge as
+	   every other section's text (see the "Live playground" section markup). */
+	.playground-wide {
 		max-width: 1040px;
-		margin: 0 auto;
-		padding: 0 1.25rem;
 	}
 
 	main {
 		padding: 1rem 0 4rem;
 	}
 	/* Plain block stack (not flex) on purpose: these sections use
-	   `margin: 0 auto` to center themselves under a max-width cap, and
+	   `margin-inline: auto` to center themselves under a max-width cap, and
 	   `margin: auto` on the cross axis of a flex item is special-cased by
 	   the flexbox spec to absorb stretch — which silently switches the
 	   item to shrink-to-fit sizing (governed by content's intrinsic width,
@@ -435,7 +464,7 @@ const editor = new MarkdownEditorState({ markdown: showcaseMarkdown });
 		margin: 0 0 1.1rem;
 		font-size: 1.02rem;
 		line-height: 1.7;
-		color: #292524;
+		color: var(--ink);
 	}
 	.why p:last-child {
 		margin-bottom: 0;
