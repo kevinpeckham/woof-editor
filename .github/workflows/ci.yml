@@ -36,6 +36,12 @@ jobs:
         run: bun install --frozen-lockfile
       - name: biome ci
         run: bunx biome ci .
+      - name: published package stays utility-CSS-free
+        run: |
+          if grep -rnE 'class="[^"]*(px-|py-|bg-|text-(white|xs|sm|left|red|blue)|rounded|flex |w-full|border-|hover:|absolute|fixed|inset-0|opacity-|shadow|ml-|mt-|mb-|min-w-)' src/lib/; then
+            echo "::error::Utility-CSS class names found in src/lib — the published package must remain self-contained (scoped CSS only)."
+            exit 1
+          fi
 
   test:
     name: vitest

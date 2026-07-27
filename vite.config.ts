@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { playwright } from "@vitest/browser-playwright";
+import UnoCSS from "unocss/vite";
 import { defineConfig } from "vitest/config";
 
 const dirname =
@@ -27,7 +28,7 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ["@testing-library/dom"],
 	},
-	plugins: [sveltekit()],
+	plugins: [UnoCSS(), sveltekit()],
 	server: {
 		// Comma-separated extra hosts (e.g. the lj-bench dev VM's Caddy
 		// domain). Vite's own __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS env var

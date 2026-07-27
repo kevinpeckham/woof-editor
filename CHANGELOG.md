@@ -7,6 +7,7 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 ### Added
 
 - Demo site: prerendered static playground at the repo root routes — `bun run build:site` / `preview:site`.
+- UnoCSS is available for demo-site development (`devDependency`, wired into `vite.config.ts` and `src/routes/+layout.svelte` only). It never touches the published package: `src/lib` remains self-contained scoped CSS with no utility classes, enforced by a CI guard step (`.github/workflows/ci.yml`, `lint` job) that fails the build if utility-class patterns show up under `src/lib/`.
 
 ## [0.2.0] — 2026-07-26 — Consumable-anywhere hardening
 
