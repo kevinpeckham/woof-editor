@@ -187,8 +187,8 @@ const determinePlatform: Attachment = () => {
 						bg-slate-200
 						border
 						border-current/0
-						pb-5
-						pt-4
+						pb-6
+						pt-5
 						px-10
 						rounded-md
 						text-prussianBlue">
@@ -200,7 +200,7 @@ const determinePlatform: Attachment = () => {
 				<!-- source pane -->
 				<div class="grid grid-cols-1 place-content-start h-full grid-rows-[auto_1fr]">
 					<h3 class="heading-3">Serialized Markdown (live)</h3>
-					<div class="bg-white/5 border border-current/40 h-full px-4 pt-4 pb-6 rounded-md"><pre class="source-code">{editor.markdownCurrent}</pre></div>
+					<div class="bg-white/5 border border-current/40 h-full px-4 pt-5 pb-6 rounded-md"><pre class="source-code">{editor.markdownCurrent}</pre></div>
 				</div>
 
 				<!-- note -->
@@ -321,6 +321,12 @@ const determinePlatform: Attachment = () => {
 		margin: 0 0 1rem;
 		padding-left: 1.4rem;
 		line-height: 1.7;
+	}
+	:global(.demo-article ul) {
+		list-style: disc;
+	}
+	:global(.demo-article ol) {
+		list-style: decimal;
 	}
 	:global(.demo-article li) {
 		margin-bottom: 0.3rem;
