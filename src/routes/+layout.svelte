@@ -13,29 +13,3 @@ let { children } = $props();
 </script>
 
 {@render children()}
-
-<style>
-	:global(html) {
-		box-sizing: border-box;
-	}
-	:global(*),
-	:global(*::before),
-	:global(*::after) {
-		box-sizing: inherit;
-	}
-	:global(body) {
-		margin: 0;
-		background: #faf9f7;
-		color: #1c1917;
-		font-family:
-			system-ui,
-			-apple-system,
-			"Segoe UI",
-			Roboto,
-			"Helvetica Neue",
-			Arial,
-			sans-serif;
-		-webkit-font-smoothing: antialiased;
-		text-rendering: optimizeLegibility;
-	}
-</style>

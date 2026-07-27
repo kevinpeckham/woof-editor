@@ -12,3 +12,5 @@ node_modules
 !.env.schema
 .DS_Store
 *.log
+.vercel
+.env*

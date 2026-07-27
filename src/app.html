@@ -3,27 +3,12 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<!-- Deliberately no static title or description tag here: the only
-		     route supplies both via svelte:head, and since this is a fully
-		     static prerendered site (adapter-static, prerender=true), that
-		     content is already baked into the served HTML at build time. A
-		     hardcoded tag in this fixed position, ahead of the placeholder
-		     below, would create a second copy that wins over the real one
-		     per the HTML title algorithm (browsers use the first title
-		     element found in head, in document order). Verified against
-		     build/index.html.
-
-		     Note for future editors: SvelteKit substitutes its head
-		     placeholder by a plain string replace across this whole file, so
-		     writing the literal placeholder token a second time anywhere in
-		     this file (even inside a comment, even describing it in prose)
-		     gets replaced too. The injected content includes its own HTML
-		     comment marker, which would prematurely close whatever comment
-		     it landed inside and leak the remainder as visible page text —
-		     which is exactly why this note spells it out only in words. -->
+		<link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/icon.svg">
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
-		<div style="display: contents">%sveltekit.body%</div>
+	<body
+		data-sveltekit-preload-data="hover"
+		class="flex font-sans bg-prussianBlue text-slate-50 max-w-screen min-h-screen overflow-x-hidden relative">
+		<div class="contents">%sveltekit.body%</div>
 	</body>
 </html>
