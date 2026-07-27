@@ -4,6 +4,39 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/icon.svg">
+
+		<!-- Privacy-friendly analytics by Plausible -->
+		<script
+			async
+			src="https://plausible.io/js/pa-0icY5_GxpGtQSL3B61ozX.js"
+		></script>
+		<script id="plausible-singleton">
+		(() => {
+			// Ensure a single global plausible function with a queue for early calls
+			if (!window.plausible) {
+				window.plausible = (...args) => {
+					if (!window.plausible.q) {
+						window.plausible.q = [];
+					}
+					window.plausible.q.push(args);
+				};
+			}
+
+			// Provide an init method that stores options
+			if (!window.plausible.init) {
+				window.plausible.init = (options) => {
+					if (!options) {
+						options = {};
+					}
+					window.plausible.o = options;
+				};
+			}
+
+			// Initialize with default options
+			window.plausible.init();
+		})();
+		</script>
+
 		%sveltekit.head%
 	</head>
 	<body
