@@ -7,13 +7,10 @@
 // during SSR — the prerendered HTML has an empty editor surface, and that's
 // fine, it hydrates on the client.
 
-import { MarkdownEditor, MarkdownEditorState } from "$lib";
-    import ContextMenu from "$lib/menus/ContextMenu.svelte";
-
 // type
-import type { Attachment } from 'svelte/attachments';
-import { browser } from '$app/environment';
-
+import type { Attachment } from "svelte/attachments";
+import { MarkdownEditor, MarkdownEditorState } from "$lib";
+import ContextMenu from "$lib/menus/ContextMenu.svelte";
 
 // Showcase content: exercises an H1 title, inline bold/italic/strike/code/
 // link, an H2, a bulleted + a numbered list, a blockquote, a fenced code
@@ -83,18 +80,12 @@ const editor = new MarkdownEditorState({ markdown: showcaseMarkdown });
 let isMac = $state(false);
 let modifierKey = $derived(isMac ? "⌘" : "Ctrl");
 
-// attached function for determining mac / windows for keyboard shortcuts
+// Attachment for determining mac / windows for keyboard shortcuts.
+// Attachments run client-side only (and re-run on reactive changes), so no
+// $effect wrapper and no `browser` guard are needed inside one.
 const determinePlatform: Attachment = () => {
-	$effect(() => {
-		isMac = browser && /mac/i.test(navigator.platform);
-	});
-	return;
-}
-
-
-
-
-
+	isMac = /mac/i.test(navigator.platform);
+};
 </script>
 
 <svelte:head>

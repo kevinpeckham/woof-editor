@@ -13,7 +13,7 @@
 // shortcuts, and a safelist are skipped until the demo site actually needs
 // them — add them here (still inline, not under `src/lib`) if that changes.
 
-import { defineConfig, presetIcons, presetWebFonts, presetWind4, } from "unocss";
+import { defineConfig, presetIcons, presetWebFonts, presetWind4 } from "unocss";
 
 export default defineConfig({
 	presets: [
@@ -40,10 +40,12 @@ export default defineConfig({
 		"max-w-screen",
 		"min-h-screen",
 		"overflow-x-hidden",
-		"relative"
+		"relative",
 	],
 	shortcuts: [
-		["button", `
+		[
+			"button",
+			`
 			border
 			border-current
 			inline-flex
@@ -54,20 +56,27 @@ export default defineConfig({
 			opacity-90
 			text-nowrap
 			hover-opacity-100
-			hover-text-maximumYellow`],
-		["button-small", `
+			hover-text-maximumYellow`,
+		],
+		[
+			"button-small",
+			`
 			bg-white/5
 			button
 			px-3
 			py-1.5
 			rounded-sm
-			text-0.85em`],
-		["button-xsmall", `
+			text-0.85em`,
+		],
+		[
+			"button-xsmall",
+			`
 			button
 			px-2
 			py-1
 			rounded-sm
-			text-0.85em`],
+			text-0.85em`,
+		],
 		[
 			"heading-1",
 			"text-balance font-700 text-maximumYellow mb-3 text-32px lg:text-42px leading-snug",
@@ -92,8 +101,14 @@ export default defineConfig({
 			text-1.1em
 			text-balance`,
 		],
-		["link", "decoration-current/80 opacity-90 underline underline-offset-4 hover-opacity-100 hover-text-maximumYellow hover-decoration-current"],
-		["pill", "bg-white/10 inline-flex items-center font-mono border border-current/60 gap-1 opacity-90 px-3 py-1 rounded-full text-0.85em"],
+		[
+			"link",
+			"decoration-current/80 opacity-90 underline underline-offset-4 hover-opacity-100 hover-text-maximumYellow hover-decoration-current",
+		],
+		[
+			"pill",
+			"bg-white/10 inline-flex items-center font-mono border border-current/60 gap-1 opacity-90 px-3 py-1 rounded-full text-0.85em",
+		],
 		["page-x-padding", "px-4 sm:px-6 md:px-7 lg:px-8 xl:px-16 2xl:px-24"],
 		["source-code", "font-mono text-0.85em text-wrap"],
 	],
