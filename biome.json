@@ -16,6 +16,7 @@
 			"**",
 			"!**/dist",
 			"!**/build",
+			"!**/.vercel",
 			"!**/.svelte-kit",
 			"!**/node_modules",
 			"!**/storybook-static",
