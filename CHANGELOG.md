@@ -4,6 +4,8 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-07-28 — isomorphic-dompurify 3.x compatibility
+
 ### Added
 
 - Demo site: prerendered static playground at the repo root routes — `bun run build:site` / `preview:site`.
