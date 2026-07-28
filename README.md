@@ -26,7 +26,7 @@ Peer dependencies (install them if not already in your project):
 - `marked ^18`
 - `marked-footnote ^1.4`
 - `@kevinpeckham/barkdown ^0`
-- `isomorphic-dompurify ^2`
+- `isomorphic-dompurify ^2 || ^3`
 
 ## Usage
 
@@ -313,7 +313,7 @@ bun run build:site      # prerendered static demo page (adapter-static), output 
 bun run preview:site    # serve that build locally for a final check
 ```
 
-`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (68 tests over the state class + DOM primitives) and a `storybook` project that drives the 4 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (72 tests total). Both run in CI.
+`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (71 tests over the state class + DOM primitives + sanitize config, including a drift check against the installed `dompurify`'s vendored profile lists) and a `storybook` project that drives the 4 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (75 tests total). Both run in CI.
 
 ## Known limitations
 

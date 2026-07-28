@@ -8,6 +8,11 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 - Demo site: prerendered static playground at the repo root routes — `bun run build:site` / `preview:site`.
 - UnoCSS is available for demo-site development (`devDependency`, wired into `vite.config.ts` and `src/routes/+layout.svelte` only). It never touches the published package: `src/lib` remains self-contained scoped CSS with no utility classes, enforced by a CI guard step (`.github/workflows/ci.yml`, `lint` job) that fails the build if utility-class patterns show up under `src/lib/`.
+- **Vendored-profile drift check.** `src/lib/utils/sanitize-drift.test.ts` reads the *installed* `dompurify`'s own `src/tags.ts` / `src/attrs.ts` and diffs its `html` profile against the `HTML_PROFILE_TAGS` / `HTML_PROFILE_ATTRS` vendored in `src/lib/utils/sanitize.ts`, failing loudly (naming the differing entries, and the installed dompurify version) on any mismatch. Runs in the node-env `unit` project alongside `sanitize.test.ts` — DOMPurify's html-profile inspection needs the same real-DOM (jsdom-via-`isomorphic-dompurify`) environment those tests already document. Guards against the vendored lists silently going stale now that the `isomorphic-dompurify` peer range spans two wrapper majors, each potentially pinning a different underlying `dompurify`.
+
+### Changed
+
+- **Widened the `isomorphic-dompurify` peer range to `^2 || ^3`.** The `^2` peer previously rejected `isomorphic-dompurify@3.x` consumers outright (e.g. `lightning-jar/replicator`, which ships `3.18.0`), even though both wrapper majors wrap `dompurify` 3.x + jsdom (`isomorphic-dompurify@2.x` pins `dompurify ^3.3.1`; `3.x` pins `^3.4.12`), so the sanitizer major is unchanged across the range. Non-breaking: nothing in this package's sanitize behavior changed. `devDependencies` bumped to `isomorphic-dompurify ^3.19.0` so CI exercises the 3.x line the real consumer runs; installed `dompurify` is still `3.4.12`, matching the vendored `HTML_PROFILE_TAGS` / `HTML_PROFILE_ATTRS` exactly — no re-vendoring needed. All existing `sanitize.test.ts` behavioral/config assertions pass unchanged under 3.x.
 
 ## [0.2.0] — 2026-07-26 — Consumable-anywhere hardening
 
