@@ -2,7 +2,6 @@
 // fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- two $effects below: popover show/hide + viewport clamping (legitimate imperative APIs) and a submenu re-clamp. Both are documented at the site, INCLUDING the residual `showTypeSubmenu = false` state-write smell and its planned 0.3 replacement. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 import {
 	applyLinkToSelection,
-	CONVERTIBLE_TAGS_LIST,
 	changeBlockType,
 	insertFootnote,
 	insertParagraph,
@@ -15,6 +14,7 @@ import {
 	toggleBlockWrap,
 	toggleInlineEmphasisOnSelection,
 } from "../actions/dom";
+import { convertibleTagsFor, type ResolvedFeatures } from "../utils/features";
 import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
 
 /**
@@ -39,12 +39,14 @@ interface ContextState {
 let {
 	contextState,
 	containerRef,
+	features,
 	onEdit,
 	onClose,
 	onOpenFootnoteEditor,
 }: {
 	contextState: ContextState;
 	containerRef: HTMLElement | null;
+	features: ResolvedFeatures;
 	onEdit: () => void;
 	onClose: () => void;
 	onOpenFootnoteEditor: (
@@ -70,6 +72,11 @@ let isHeading = $derived(isHeadingBlock(contextState.block));
 
 // Footnotes on the H1 (article title) don't make sense — hide the option.
 let isH1 = $derived(contextState.block?.tagName === "H1");
+
+// Creation-gating: the block-type submenu's option list, filtered to the
+// features that are enabled. When only "Paragraph" is left (≤1 entry),
+// there's nothing to convert to, so the submenu toggle hides entirely.
+let convertibleTags = $derived(convertibleTagsFor(features));
 
 function clampToViewport() {
 	if (!innerEl) return;
@@ -247,7 +254,7 @@ function handleBackdropClick(e: MouseEvent) {
 >
 	<div bind:this={innerEl} class="woof-menu-panel" style="left: 0; top: 0;">
 		{#if contextState.hasSelection}
-			{#if !isHeading}
+			{#if !isHeading && features.bold}
 				<button
 					type="button"
 					class="woof-menu-item"
@@ -256,6 +263,8 @@ function handleBackdropClick(e: MouseEvent) {
 				>
 					Bold selection
 				</button>
+			{/if}
+			{#if !isHeading && features.italic}
 				<button
 					type="button"
 					class="woof-menu-item"
@@ -265,46 +274,52 @@ function handleBackdropClick(e: MouseEvent) {
 					Italic selection
 				</button>
 			{/if}
-			{#if contextState.linkEl}
-				<button
-					type="button"
-					class="woof-menu-item"
-					onmousedown={preserveSelection}
-					onclick={handleUnlink}
-				>
-					Remove link
-				</button>
-			{:else}
-				<button
-					type="button"
-					class="woof-menu-item"
-					onmousedown={preserveSelection}
-					onclick={handleLink}
-				>
-					Add link…
-				</button>
+			{#if features.links}
+				{#if contextState.linkEl}
+					<button
+						type="button"
+						class="woof-menu-item"
+						onmousedown={preserveSelection}
+						onclick={handleUnlink}
+					>
+						Remove link
+					</button>
+				{:else}
+					<button
+						type="button"
+						class="woof-menu-item"
+						onmousedown={preserveSelection}
+						onclick={handleLink}
+					>
+						Add link…
+					</button>
+				{/if}
 			{/if}
-			<hr class="woof-menu-hr" />
+			{#if (!isHeading && (features.bold || features.italic)) || features.links}
+				<hr class="woof-menu-hr" />
+			{/if}
 		{/if}
 
 		{#if contextState.block}
 			{#if !isTitle}
-				<button type="button" class="woof-menu-item" onclick={() => (showTypeSubmenu = !showTypeSubmenu)}>
-					<span>Change block type</span>
-					<span class="woof-chevron">{showTypeSubmenu ? "▾" : "▸"}</span>
-				</button>
-				{#if showTypeSubmenu}
-					<div class="woof-submenu">
-						{#each CONVERTIBLE_TAGS_LIST as option (option.tag)}
-							<button
-								type="button"
-								class="woof-menu-item {contextState.block?.tagName.toLowerCase() === option.tag ? 'is-active' : ''}"
-								onclick={() => handleTypeChange(option.tag)}
-							>
-								{option.label}
-							</button>
-						{/each}
-					</div>
+				{#if convertibleTags.length > 1}
+					<button type="button" class="woof-menu-item" onclick={() => (showTypeSubmenu = !showTypeSubmenu)}>
+						<span>Change block type</span>
+						<span class="woof-chevron">{showTypeSubmenu ? "▾" : "▸"}</span>
+					</button>
+					{#if showTypeSubmenu}
+						<div class="woof-submenu">
+							{#each convertibleTags as option (option.tag)}
+								<button
+									type="button"
+									class="woof-menu-item {contextState.block?.tagName.toLowerCase() === option.tag ? 'is-active' : ''}"
+									onclick={() => handleTypeChange(option.tag)}
+								>
+									{option.label}
+								</button>
+							{/each}
+						</div>
+					{/if}
 				{/if}
 			{:else}
 				<div class="woof-menu-note" title="The article title must be a Heading 1">
@@ -312,13 +327,17 @@ function handleBackdropClick(e: MouseEvent) {
 				</div>
 			{/if}
 
-			{#if !isHeading}
-				<button type="button" class="woof-menu-item" onclick={handleBoldBlock}>
-					Bold whole block
-				</button>
-				<button type="button" class="woof-menu-item" onclick={handleItalicBlock}>
-					Italic whole block
-				</button>
+			{#if !isHeading && (features.bold || features.italic)}
+				{#if features.bold}
+					<button type="button" class="woof-menu-item" onclick={handleBoldBlock}>
+						Bold whole block
+					</button>
+				{/if}
+				{#if features.italic}
+					<button type="button" class="woof-menu-item" onclick={handleItalicBlock}>
+						Italic whole block
+					</button>
+				{/if}
 			{/if}
 
 			<hr class="woof-menu-hr" />
@@ -329,7 +348,7 @@ function handleBackdropClick(e: MouseEvent) {
 			<button type="button" class="woof-menu-item" onclick={handleInsertAfter}>
 				Insert paragraph after
 			</button>
-			{#if !isH1}
+			{#if !isH1 && features.footnotes}
 			<button type="button" class="woof-menu-item" onclick={handleAddFootnote}>
 				Add footnote
 			</button>

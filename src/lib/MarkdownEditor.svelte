@@ -442,6 +442,9 @@ function handleContainerKeyDown(e: KeyboardEvent) {
 	if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
 	const tag = BLOCK_TYPE_SHORTCUTS[e.code];
 	if (!tag || !containerRef) return;
+	// Creation-gating: a heading level the consumer disabled can't be
+	// reached via keyboard shortcut either. Paragraph ("p") is never gated.
+	if (tag.startsWith("h") && !features.headingLevels.has(Number(tag[1]))) return;
 
 	// Work purely off the caret — no text selection required, so the
 	// shortcut fires from an empty block too. When the caret sits directly
@@ -854,6 +857,7 @@ onDestroy(() => {
 	{activeBlock}
 	{containerRef}
 	{menuState}
+	{features}
 	onEdit={handleMenuEdit}
 	onClose={handleMenuClose}
 	onOpenFootnoteEditor={openFootnoteEditor}
@@ -861,12 +865,14 @@ onDestroy(() => {
 <SelectionMenu
 	{selectionState}
 	{containerRef}
+	{features}
 	onEdit={handleSelectionMenuEdit}
 	onClose={handleSelectionMenuClose}
 />
 <ContextMenu
 	{contextState}
 	{containerRef}
+	{features}
 	onEdit={handleContextMenuEdit}
 	onClose={handleContextMenuClose}
 	onOpenFootnoteEditor={openFootnoteEditor}

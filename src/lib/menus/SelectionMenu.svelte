@@ -2,7 +2,6 @@
 // fallow-ignore-file policy-violation:slx-house-rules/svelte-effect-last-resort -- two $effects below: popover show/hide + viewport clamping (legitimate imperative APIs) and a submenu re-clamp. Both are documented at the site, INCLUDING the residual `showTypeSubmenu = false` state-write smell and its planned 0.3 replacement. Per-site next-line suppression is unusable because fallow (<=3.7.1) misanchors violation lines inside .svelte scripts
 import {
 	applyLinkToSelection,
-	CONVERTIBLE_TAGS_LIST,
 	changeBlockType,
 	findNearestBlock,
 	isFirstH1,
@@ -10,6 +9,7 @@ import {
 	removeLinkFromSelection,
 	toggleInlineEmphasisOnSelection,
 } from "../actions/dom";
+import { convertibleTagsFor, type ResolvedFeatures } from "../utils/features";
 import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
 
 /**
@@ -38,11 +38,13 @@ interface SelectionState {
 let {
 	selectionState,
 	containerRef,
+	features,
 	onEdit,
 	onClose,
 }: {
 	selectionState: SelectionState;
 	containerRef: HTMLElement | null;
+	features: ResolvedFeatures;
 	onEdit: () => void;
 	onClose: () => void;
 } = $props();
@@ -70,6 +72,21 @@ let isHeading = $derived.by(() => {
 	if (!sel || sel.rangeCount === 0) return false;
 	return isHeadingBlock(findNearestBlock(sel.anchorNode, containerRef));
 });
+
+// Creation-gating: the block-type submenu's option list, filtered to the
+// features that are enabled. When only "Paragraph" is left (≤1 entry),
+// there's nothing to convert to, so the submenu toggle hides entirely —
+// ANDed with the existing wholeBlock/isTitle gate below.
+let convertibleTags = $derived(convertibleTagsFor(features));
+let showTypeToggle = $derived(
+	Boolean(selectionState.wholeBlock) && !isTitle && convertibleTags.length > 1,
+);
+
+// Whether any toolbar button precedes the Type toggle, so its leading
+// divider doesn't render on its own when B/I/Link are all gated off.
+let leadingVisible = $derived(
+	(!isHeading && features.bold) || (!isHeading && features.italic) || features.links,
+);
 
 function clampToViewport() {
 	if (!innerEl) return;
@@ -193,7 +210,7 @@ function handleTypeChange(targetTag: string) {
 >
 	<div bind:this={innerEl} class="woof-menu-panel" style="left: 0; top: 0;">
 		<div class="woof-toolbar">
-			{#if !isHeading}
+			{#if !isHeading && features.bold}
 				<button
 					type="button"
 					class="woof-toolbar-btn bold"
@@ -204,6 +221,8 @@ function handleTypeChange(targetTag: string) {
 				>
 					B
 				</button>
+			{/if}
+			{#if !isHeading && features.italic}
 				<button
 					type="button"
 					class="woof-toolbar-btn italic"
@@ -215,29 +234,33 @@ function handleTypeChange(targetTag: string) {
 					I
 				</button>
 			{/if}
-			{#if selectionState.linkEl}
-				<button
-					type="button"
-					class="woof-toolbar-btn"
-					onmousedown={preserveSelection}
-					onclick={handleUnlink}
-					title="Remove link"
-				>
-					Unlink
-				</button>
-			{:else}
-				<button
-					type="button"
-					class="woof-toolbar-btn"
-					onmousedown={preserveSelection}
-					onclick={handleLink}
-					title="Add link"
-				>
-					Link
-				</button>
+			{#if features.links}
+				{#if selectionState.linkEl}
+					<button
+						type="button"
+						class="woof-toolbar-btn"
+						onmousedown={preserveSelection}
+						onclick={handleUnlink}
+						title="Remove link"
+					>
+						Unlink
+					</button>
+				{:else}
+					<button
+						type="button"
+						class="woof-toolbar-btn"
+						onmousedown={preserveSelection}
+						onclick={handleLink}
+						title="Add link"
+					>
+						Link
+					</button>
+				{/if}
 			{/if}
-			{#if selectionState.wholeBlock && !isTitle}
-				<div class="woof-toolbar-divider"></div>
+			{#if showTypeToggle}
+				{#if leadingVisible}
+					<div class="woof-toolbar-divider"></div>
+				{/if}
 				<button
 					type="button"
 					class="woof-toolbar-btn"
@@ -250,9 +273,9 @@ function handleTypeChange(targetTag: string) {
 				</button>
 			{/if}
 		</div>
-		{#if showTypeSubmenu && selectionState.wholeBlock && !isTitle}
+		{#if showTypeSubmenu && showTypeToggle}
 			<div class="woof-submenu">
-				{#each CONVERTIBLE_TAGS_LIST as option (option.tag)}
+				{#each convertibleTags as option (option.tag)}
 					<button
 						type="button"
 						class="woof-menu-item {selectionState.wholeBlock?.tagName.toLowerCase() === option.tag ? 'is-active' : ''}"
