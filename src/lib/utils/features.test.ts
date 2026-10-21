@@ -27,6 +27,17 @@ describe("resolveFeatures", () => {
 	test("headings: false empties the level set", () => {
 		expect(resolveFeatures({ headings: false }).headingLevels.size).toBe(0);
 	});
+
+	test("mutating one call's headingLevels does not affect later calls (no shared mutable default)", () => {
+		const first = resolveFeatures(undefined);
+		(first.headingLevels as Set<number>).add(99);
+		(first.headingLevels as Set<number>).delete(1);
+
+		const second = resolveFeatures(undefined);
+		expect([...second.headingLevels].sort()).toEqual([1, 2, 3, 4, 5, 6]);
+		expect(second.headingLevels).not.toBe(first.headingLevels);
+		expect(ALL_FEATURES.headingLevels.has(99)).toBe(false);
+	});
 });
 
 describe("convertibleTagsFor", () => {

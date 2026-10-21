@@ -19,42 +19,58 @@ export type ResolvedFeatures = {
 	tables: boolean;
 };
 
-const ALL_HEADING_LEVELS: ReadonlySet<number> = new Set([1, 2, 3, 4, 5, 6]);
-
-export const ALL_FEATURES: ResolvedFeatures = {
+// Frozen reference value — used for equality comparisons (e.g. in tests)
+// and as the semantic "everything enabled" constant. NEVER return this
+// object (or its `headingLevels` Set) directly from `resolveFeatures`:
+// `Object.freeze` only blocks reassigning ALL_FEATURES's own properties,
+// it does NOT stop `.add()`/`.delete()`/`.clear()` on the Set instance
+// sitting in `headingLevels` (Set mutators aren't object properties, so
+// freeze can't intercept them). Handing out that same Set to every caller
+// of `resolveFeatures(undefined)` would let one consumer's mutation
+// corrupt the shared default for the whole process. `resolveFeatures`
+// therefore always builds a fresh Set (see `resolveHeadingLevels` below).
+export const ALL_FEATURES: ResolvedFeatures = Object.freeze({
 	blockquote: true,
 	bold: true,
 	codeBlock: true,
 	footnotes: true,
-	headingLevels: ALL_HEADING_LEVELS,
+	headingLevels: new Set([1, 2, 3, 4, 5, 6]),
 	images: true,
 	italic: true,
 	links: true,
 	lists: true,
 	strikethrough: true,
 	tables: true,
-};
+});
 
-function resolveHeadingLevels(headings: FeatureConfig["headings"]): ReadonlySet<number> {
-	if (headings === undefined || headings === true) return ALL_HEADING_LEVELS;
+// Levels outside 1–6 (e.g. 7) are inert: both consumers (`convertibleTagsFor`'s
+// h1–h4 menu filter and `pasteForbidTagsFor`'s h1–h6 loop) only ever check
+// membership for 1–6, so stray out-of-range levels in the input array are
+// stored but never read. Future code iterating `headingLevels` directly
+// should bound itself to 1–6 too.
+function resolveHeadingLevels(headings: FeatureConfig["headings"]): Set<number> {
+	if (headings === undefined || headings === true) return new Set([1, 2, 3, 4, 5, 6]);
 	if (headings === false) return new Set();
 	return new Set(headings);
 }
 
 export function resolveFeatures(config?: FeatureConfig): ResolvedFeatures {
-	if (!config) return ALL_FEATURES;
+	// Always construct a fresh object (and a fresh `headingLevels` Set) —
+	// never return the shared `ALL_FEATURES` singleton — so a consumer
+	// mutating the Set they got back can't corrupt the default for other
+	// callers. See the comment on `ALL_FEATURES` above.
 	return {
-		blockquote: config.blockquote ?? true,
-		bold: config.bold ?? true,
-		codeBlock: config.codeBlock ?? true,
-		footnotes: config.footnotes ?? true,
-		headingLevels: resolveHeadingLevels(config.headings),
-		images: config.images ?? true,
-		italic: config.italic ?? true,
-		links: config.links ?? true,
-		lists: config.lists ?? true,
-		strikethrough: config.strikethrough ?? true,
-		tables: config.tables ?? true,
+		blockquote: config?.blockquote ?? true,
+		bold: config?.bold ?? true,
+		codeBlock: config?.codeBlock ?? true,
+		footnotes: config?.footnotes ?? true,
+		headingLevels: resolveHeadingLevels(config?.headings),
+		images: config?.images ?? true,
+		italic: config?.italic ?? true,
+		links: config?.links ?? true,
+		lists: config?.lists ?? true,
+		strikethrough: config?.strikethrough ?? true,
+		tables: config?.tables ?? true,
 	};
 }
 
