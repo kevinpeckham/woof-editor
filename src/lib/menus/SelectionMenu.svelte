@@ -88,6 +88,15 @@ let leadingVisible = $derived(
 	(!isHeading && features.bold) || (!isHeading && features.italic) || features.links,
 );
 
+// Whether the toolbar has ANYTHING to show at all (B, I, Link/Unlink, or
+// the Type toggle). Under aggressive gating all four can be hidden at
+// once for a given selection — without this check the popover would still
+// `showPopover()` an empty panel (a stray few-pixel chip at the anchor
+// point). Under default features this is always true (bold/italic/links
+// all enabled), so the popover is unconditionally shown, same as before
+// this gating work existed.
+let anyItemVisible = $derived(leadingVisible || showTypeToggle);
+
 function clampToViewport() {
 	if (!innerEl) return;
 	const rect = innerEl.getBoundingClientRect();
@@ -107,7 +116,11 @@ function clampToViewport() {
 // viewport-clamped positioning of the selection menu. showPopover()/hidePopover()
 // are imperative-only (the popover attribute has no declarative "open"
 // binding) and clampToViewport() measures after paint, so the core is
-// legitimate.
+// legitimate. The `anyItemVisible` guard keeps a fully-gated selection
+// (no B/I/Link/Type to show) from ever calling showPopover() — the
+// popover attribute defaults to `display: none` until shown, so skipping
+// the call entirely (rather than showing-then-hiding an empty panel)
+// means no stray chip ever paints.
 //
 // KNOWN SMELL, deliberately left for 0.3: `showTypeSubmenu = false` is a
 // $state write inside an effect, and it is the direct cause of the SECOND
@@ -124,7 +137,7 @@ function clampToViewport() {
 // {#if selectionState.open}, making `showTypeSubmenu` ordinary local $state that is
 // fresh on every mount — the reset and this effect pair both disappear.
 $effect(() => {
-	if (selectionState.open) {
+	if (selectionState.open && anyItemVisible) {
 		showTypeSubmenu = false;
 		popoverEl?.showPopover?.();
 		queueMicrotask(clampToViewport);

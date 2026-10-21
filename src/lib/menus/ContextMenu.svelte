@@ -78,6 +78,17 @@ let isH1 = $derived(contextState.block?.tagName === "H1");
 // there's nothing to convert to, so the submenu toggle hides entirely.
 let convertibleTags = $derived(convertibleTagsFor(features));
 
+// Whether anything renders above the "Insert paragraph before/after"
+// section — the title note (unconditional when isTitle), the type
+// submenu toggle, or bold/italic. Those buttons themselves aren't
+// feature-gated (inserting a paragraph isn't a creation-gated act), but
+// under aggressive gating everything above them can hide at once, which
+// would otherwise leave their leading `<hr>` as a bare divider at the
+// top of the block section.
+let hasContentAboveInsert = $derived(
+	isTitle || convertibleTags.length > 1 || (!isHeading && (features.bold || features.italic)),
+);
+
 function clampToViewport() {
 	if (!innerEl) return;
 	const rect = innerEl.getBoundingClientRect();
@@ -340,7 +351,9 @@ function handleBackdropClick(e: MouseEvent) {
 				{/if}
 			{/if}
 
-			<hr class="woof-menu-hr" />
+			{#if hasContentAboveInsert}
+				<hr class="woof-menu-hr" />
+			{/if}
 
 			<button type="button" class="woof-menu-item" onclick={handleInsertBefore}>
 				Insert paragraph before

@@ -17,7 +17,10 @@ import { fitPopoverToViewport } from "../utils/fitPopoverToViewport";
  * in, and drives this menu's open/close + position via `menuState`.
  *
  * Menu items:
- * - Change type ▸ — submenu of P / H1..H4 / Blockquote
+ * - Change type ▸ — submenu of Paragraph / H1-H4 / Blockquote / Bulleted
+ *   list / Numbered list / Code block (`CONVERTIBLE_TAGS_LIST`), filtered
+ *   down to whatever `features` allows via `convertibleTagsFor` — the
+ *   toggle hides entirely when that leaves ≤1 entry
  * - Bold whole block — wraps children in `<strong>` or unwraps if
  *   already fully wrapped
  * - Italic whole block — same for `<em>`
@@ -77,6 +80,17 @@ let isH1 = $derived(activeBlock?.tagName === "H1");
 // features that are enabled. When only "Paragraph" is left (≤1 entry),
 // there's nothing to convert to, so the submenu toggle hides entirely.
 let convertibleTags = $derived(convertibleTagsFor(features));
+
+// Whether anything renders above the "Delete block" section (within the
+// `!isTitle` branch, so `isTitle` is always false here). Under aggressive
+// gating all three — type submenu, bold/italic, footnote — can hide at
+// once; without this check the Delete section's leading `<hr>` would
+// become a bare divider at the top of the panel.
+let hasContentAboveDelete = $derived(
+	convertibleTags.length > 1 ||
+		(!isHeading && (features.bold || features.italic)) ||
+		(!isH1 && features.footnotes),
+);
 
 function clampToViewport() {
 	if (!innerEl) return;
@@ -256,7 +270,9 @@ function handleBackdropClick(e: MouseEvent) {
 		{/if}
 
 		{#if !isTitle}
-			<hr class="woof-menu-hr" />
+			{#if hasContentAboveDelete}
+				<hr class="woof-menu-hr" />
+			{/if}
 
 			<button type="button" class="woof-menu-item danger" onclick={handleDelete}>
 				Delete block

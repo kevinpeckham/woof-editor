@@ -444,7 +444,13 @@ function handleContainerKeyDown(e: KeyboardEvent) {
 	if (!tag || !containerRef) return;
 	// Creation-gating: a heading level the consumer disabled can't be
 	// reached via keyboard shortcut either. Paragraph ("p") is never gated.
-	if (tag.startsWith("h") && !features.headingLevels.has(Number(tag[1]))) return;
+	// Swallow the chord (preventDefault) rather than falling through to text
+	// insertion — gated chords stay reserved-but-inert, same as the enabled
+	// path's behavior on AltGr layouts.
+	if (tag.startsWith("h") && !features.headingLevels.has(Number(tag[1]))) {
+		e.preventDefault();
+		return;
+	}
 
 	// Work purely off the caret — no text selection required, so the
 	// shortcut fires from an empty block too. When the caret sits directly
