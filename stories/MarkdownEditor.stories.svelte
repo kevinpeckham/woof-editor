@@ -143,6 +143,90 @@ async function playRestrictedFeatures({ canvasElement }: { canvasElement: HTMLEl
 		expect(document.querySelector(".woof-menu-backdrop:popover-open")).toBeNull();
 	});
 }
+
+/**
+ * Regression test for the native-shortcut gating fix: `handleContainerKeyDown`
+ * previously only matched undo/redo and Alt-chord block-type shortcuts under
+ * `(e.metaKey || e.ctrlKey) && !e.altKey`, so Cmd/Ctrl+B / Cmd/Ctrl+I fell
+ * through to the browser's own contenteditable bold/italic — inserting
+ * `<b>`/`<i>` directly, bypassing `config.features` entirely. This config
+ * disables both `bold` and `italic`.
+ *
+ * This story runs in real headless Chromium (see the `storybook` vitest
+ * project in `vite.config.ts`, which uses `@vitest/browser-playwright`), so
+ * `userEvent.keyboard`'s Ctrl+B below is delivered as a genuine browser
+ * keystroke — the same input path that drives the browser's native
+ * contenteditable bold binding. That makes this a real exercise of the fix,
+ * not a simulation of one: a regression in the `handleContainerKeyDown`
+ * guard would show up here as a `<b>`/`<strong>` wrapping the selected text.
+ *
+ * The Selection menu assertions are the deterministic half of this test —
+ * Bold/Italic must not render (under-gating) while Link must still render
+ * (over-gating guard: links are left enabled in this config).
+ */
+async function playInlineFormattingGated({ canvasElement }: { canvasElement: HTMLElement }) {
+	const body = canvasElement.querySelector<HTMLElement>(".woof-editor-body");
+	if (!body) throw new Error("contenteditable body not found");
+
+	// Seeding happens in a post-mount effect.
+	await waitFor(() => {
+		expect(body.querySelector("p")?.textContent).toBe("Some selectable text for gating.");
+	});
+	const paragraph = body.querySelector("p");
+	const textNode = paragraph?.firstChild as Text | undefined;
+	if (!textNode) throw new Error("paragraph text node not found");
+
+	const fullText = textNode.textContent ?? "";
+	const start = fullText.indexOf("selectable");
+	const end = start + "selectable".length;
+	if (start < 0) throw new Error("expected substring not found in paragraph");
+
+	body.focus();
+	const range = document.createRange();
+	range.setStart(textNode, start);
+	range.setEnd(textNode, end);
+	const selection = window.getSelection();
+	selection?.removeAllRanges();
+	selection?.addRange(range);
+
+	// The component only (re)computes the selection menu on mouseup/keyup —
+	// not on every `selectionchange` (see `updateSelectionMenu`'s doc
+	// comment in MarkdownEditor.svelte) — so dispatch a mouseup to simulate
+	// the end of a real drag-select.
+	body.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+
+	// Positive assertion first (Link must render — links stay enabled),
+	// so the negative assertions below aren't vacuous.
+	await waitFor(() => {
+		expect(document.querySelector(".woof-menu-backdrop:popover-open")).toBeTruthy();
+	});
+	const menuBackdrop = document.querySelector<HTMLElement>(".woof-menu-backdrop:popover-open");
+	if (!menuBackdrop) throw new Error("selection menu not open");
+	const menu = within(menuBackdrop);
+	expect(menu.getByTitle("Add link")).toBeTruthy();
+
+	// Under-gating guard: Bold/Italic must not render at all.
+	expect(menu.queryByLabelText("Bold")).toBeNull();
+	expect(menu.queryByLabelText("Italic")).toBeNull();
+
+	// Re-apply the selection in case opening the (manual, non-autofocusing)
+	// popover above let it drift — the native shortcut below needs a real
+	// non-collapsed selection to act on.
+	selection?.removeAllRanges();
+	selection?.addRange(range);
+
+	// Native formatting shortcut. See the docblock above: this is a real
+	// keystroke in a real browser, not a stub.
+	await userEvent.keyboard("{Control>}b{/Control}");
+
+	// Non-vacuity guard: the selected text must still exist as plain text —
+	// proves the keystroke actually reached the editor rather than no-oping
+	// because the selection was lost.
+	await waitFor(() => {
+		expect(body.textContent).toContain("selectable");
+	});
+	expect(body.querySelector("b, strong")).toBeNull();
+}
 </script>
 
 {#snippet editorTemplate(initialMd: string, serializeDebounceMs = 250)}
@@ -176,6 +260,26 @@ A paragraph to click into.
 					images: false,
 					strikethrough: false,
 					tables: false,
+				},
+			}}
+		/>
+	</div>
+{/snippet}
+
+{#snippet inlineFormattingGatedTemplate()}
+	{@const editor = new MarkdownEditorState({
+		markdown: `# Title
+
+Some selectable text for gating.
+`,
+	})}
+	<div style="max-width: 720px; margin: 1rem auto; padding-left: 48px;">
+		<MarkdownEditor
+			{editor}
+			config={{
+				features: {
+					bold: false,
+					italic: false,
 				},
 			}}
 		/>
@@ -226,4 +330,8 @@ Editors get in-text footnote refs[^1] that round-trip to markdown.
 
 <Story name="Restricted features" asChild play={playRestrictedFeatures}>
 	{@render restrictedFeaturesTemplate()}
+</Story>
+
+<Story name="Inline formatting gated" asChild play={playInlineFormattingGated}>
+	{@render inlineFormattingGatedTemplate()}
 </Story>

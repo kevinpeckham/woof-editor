@@ -110,8 +110,8 @@ export type FeatureConfig = {
 | Field | Default | What it gates | Entry paths it restricts |
 |---|---|---|---|
 | `headings` | `true` (levels 1–6) | Which heading levels can be created | Element/Selection/Context menu's block-type submenu (offers H1–H4 only — see below), `Cmd/Ctrl+Alt+2/3/4` shortcuts, paste |
-| `bold` | `true` | Bold creation | Element/Selection/Context menu's Bold button(s), paste |
-| `italic` | `true` | Italic creation | Element/Selection/Context menu's Italic button(s), paste |
+| `bold` | `true` | Bold creation | Element/Selection/Context menu's Bold button(s), the native Cmd/Ctrl+B shortcut (gated — swallowed when disabled), paste |
+| `italic` | `true` | Italic creation | Element/Selection/Context menu's Italic button(s), the native Cmd/Ctrl+I shortcut (gated — swallowed when disabled), paste |
 | `lists` | `true` | Bulleted + numbered list creation | block-type submenu, paste |
 | `links` | `true` | Link creation | Selection/Context menu's Link/Unlink button, paste |
 | `blockquote` | `true` | Blockquote creation | block-type submenu, paste |
@@ -149,7 +149,7 @@ Three things worth being precise about:
 
 1. **Gating restricts creation, not display.** It governs what the menus, keyboard shortcuts, and paste can *create* new instances of. It does not filter content you seed the editor with (`new MarkdownEditorState({ markdown })` / `editor.hydrateMarkdown()` / `editor.markdownCurrent` assignment) — a document that already contains a table or an H1 renders and is fully editable/deletable even with `tables: false` or `headings: false`. If you need to filter what the editor will *display* (not just what it can create), use the `sanitize` prop — that's an input filter, independent of `features`.
 2. **The DOM primitives re-exported from the package root (`changeBlockType`, `toggleInlineEmphasisOnSelection`, `insertFootnote`, etc.) are ungated by design.** `features` only constrains the built-in `<MarkdownEditor>` menus/shortcuts/paste; if you call a primitive directly to build your own toolbar button, it does whatever you tell it to, regardless of `config.features`.
-3. **There is no markdown autoformat in this editor** (no "typing `**bold**` converts live" behavior) — all creation happens through the menus, the keyboard shortcuts above, or paste. `strikethrough`, `images`, and `tables` currently have no menu button or shortcut at all (see table above), so for those three fields gating only has an effect on paste.
+3. **There is no markdown autoformat in this editor** (no "typing `**bold**` converts live" behavior) — all creation happens through the menus, the keyboard shortcuts above, or paste. The component also intercepts the browser's own native Cmd/Ctrl+B and Cmd/Ctrl+I contenteditable formatting shortcuts: when `bold`/`italic` are disabled, those chords are swallowed (`preventDefault`) in `handleContainerKeyDown` rather than falling through to the browser default (which would otherwise insert `<b>`/`<i>` directly, bypassing gating entirely) — same reserved-but-inert treatment as the heading shortcuts above. `strikethrough`, `images`, and `tables` currently have no menu button or shortcut at all (see table above), so for those three fields gating only has an effect on paste. (Not every native insertion path is covered this way — see Known limitations.)
 
 ## What's in the box
 
@@ -370,7 +370,7 @@ The WYSIWYG surface auto-mounts five internal menus:
 bun install
 bun run storybook       # develop against interactive stories on :6006
 bun run test            # vitest: node unit project (state class + DOM primitives) + a
-                         # storybook project that runs 3 stories in real headless Chromium
+                         # storybook project that runs 6 stories in real headless Chromium
 bun run check           # svelte-check
 bun run biome           # lint + format
 bun run build           # svelte-package + publint
@@ -379,7 +379,7 @@ bun run build:site      # prerendered static demo page (adapter-static), output 
 bun run preview:site    # serve that build locally for a final check
 ```
 
-`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (86 tests over the state class + DOM primitives + feature-resolution logic + sanitize config, including a drift check against the installed `dompurify`'s vendored profile lists) and a `storybook` project that drives the 5 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (91 tests total). Both run in CI.
+`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (86 tests over the state class + DOM primitives + feature-resolution logic + sanitize config, including a drift check against the installed `dompurify`'s vendored profile lists) and a `storybook` project that drives the 6 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (92 tests total). Both run in CI.
 
 ## Known limitations
 
@@ -387,6 +387,7 @@ bun run preview:site    # serve that build locally for a final check
 - **No per-menu Storybook stories.** The menus are context-dependent (need real block refs + editor state + positioning). Interact with them via the main `MarkdownEditor` story instead.
 - **Footnote definitions are edited as plain text.** The footnote-editor popover is a `<textarea>` — inline formatting (bold, italic, links) inside a footnote is flattened to plain text on save.
 - **Undo/redo restores content but not caret position.** Both re-seed the whole surface from a markdown snapshot (the same imperative `innerHTML` write used to load fresh markdown) rather than replaying DOM mutations, so the caret always lands at the start of the surface after an undo/redo.
+- **Native rich-content insertion paths outside the component's own handlers bypass both `sanitize` and `config.features`.** `paste` (and, for formatting, the native Cmd/Ctrl+B/I shortcuts) are intercepted and run through sanitization/gating — but drag-and-drop of rich HTML onto the editor body, and OS/mobile formatting affordances (a phone's native selection-toolbar bold button, voice-dictation autoformatting), are not intercepted today and fall straight through to the browser default. A drop-event redirect through the existing paste pipeline (so dropped HTML gets the same treatment as pasted HTML) is queued as a 0.3 follow-up — see `docs/ROADMAP.md`.
 
 ## License
 

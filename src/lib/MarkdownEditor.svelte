@@ -438,6 +438,20 @@ function handleContainerKeyDown(e: KeyboardEvent) {
 			}
 			return;
 		}
+		// Native formatting shortcuts: Cmd/Ctrl+B and Cmd/Ctrl+I otherwise fall
+		// through to the browser's own contenteditable bold/italic (it inserts
+		// <b>/<i>, which the serializer emits as **/* — a straight bypass of
+		// creation-gating). Swallow the chord when the feature is disabled;
+		// when it's enabled, fall through unchanged so the browser default
+		// still runs exactly as before this gate existed.
+		if (key === "b" && !features.bold) {
+			e.preventDefault();
+			return;
+		}
+		if (key === "i" && !features.italic) {
+			e.preventDefault();
+			return;
+		}
 	}
 	if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
 	const tag = BLOCK_TYPE_SHORTCUTS[e.code];

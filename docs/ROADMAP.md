@@ -23,6 +23,13 @@ Follow-up candidates, mostly identified during the 0.2 hardening reviews and the
 - **Block-paste normalization** — pasting block-level HTML mid-paragraph can
   nest blocks invalidly (e.g. `<p>` in `<p>`); add a normalization pass +
   serialization tests for that shape.
+- **Drop-event redirect through the paste pipeline** — drag-and-drop of rich
+  HTML onto the contenteditable body bypasses both `sanitize` and
+  `config.features` today (it falls through to the browser's native
+  drop-insert, unlike `paste`, which already runs through
+  `sanitizePastedHtml` + `insertSanitizedHtmlAtSelection`). Add an `ondrop`
+  handler that intercepts `text/html`/`text/plain` drag data and redirects
+  it through that same pipeline, `preventDefault`-ing the native drop.
 
 ### Features with confirmed consumer demand
 

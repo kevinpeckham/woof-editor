@@ -6,7 +6,7 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ### Added
 
-- **Creation-gating via `config.features`.** New `FeatureConfig` type (`headings`, `bold`, `italic`, `lists`, `links`, `blockquote`, `codeBlock`, `strikethrough`, `footnotes`, `images`, `tables`) restricts what the editor's menus, keyboard shortcuts, and paste can CREATE — requested by `lightning-jar/replicator`. Every field defaults to `true` (today's unrestricted behavior); `headings` additionally accepts an array of levels (`1`–`6`) to offer only a subset. New exports: `FeatureConfig` / `ResolvedFeatures` types and `resolveFeatures(config?: FeatureConfig): ResolvedFeatures` (`src/lib/utils/features.ts`), plumbed through the new `config.features` field on `EditorConfig`.
+- **Creation-gating via `config.features`.** New `FeatureConfig` type (`headings`, `bold`, `italic`, `lists`, `links`, `blockquote`, `codeBlock`, `strikethrough`, `footnotes`, `images`, `tables`) restricts what the editor's menus, keyboard shortcuts, and paste can CREATE — requested by `lightning-jar/replicator`. Every field defaults to `true` (today's unrestricted behavior); `headings` additionally accepts an array of levels (`1`–`6`) to offer only a subset. Gating also now covers the browser's own native Cmd/Ctrl+B and Cmd/Ctrl+I contenteditable formatting shortcuts — previously these bypassed `bold: false`/`italic: false` entirely by falling through to the browser default (inserting `<b>`/`<i>` directly); `handleContainerKeyDown` now swallows the chord when the corresponding feature is disabled. New exports: `FeatureConfig` / `ResolvedFeatures` types and `resolveFeatures(config?: FeatureConfig): ResolvedFeatures` (`src/lib/utils/features.ts`), plumbed through the new `config.features` field on `EditorConfig`.
 
   ```ts
   config={{
@@ -21,7 +21,7 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
   }}
   ```
 
-  Gating is creation-only: seeded markdown (`new MarkdownEditorState({ markdown })` / `hydrateMarkdown()`) is never filtered by `features` — only the menus/shortcuts and paste consult it. DOM primitives re-exported from the package root (`changeBlockType`, `toggleInlineEmphasisOnSelection`, etc.) remain ungated by design. Backward-compatible: omitting `config.features` resolves every feature to enabled, matching existing behavior exactly — no consumer-visible change without opting in. Covered by `src/lib/utils/features.test.ts` and a new "Restricted features" Storybook story exercising the real Element-menu popover in Chromium.
+  Gating is creation-only: seeded markdown (`new MarkdownEditorState({ markdown })` / `hydrateMarkdown()`) is never filtered by `features` — only the menus/shortcuts and paste consult it. DOM primitives re-exported from the package root (`changeBlockType`, `toggleInlineEmphasisOnSelection`, etc.) remain ungated by design. Backward-compatible: omitting `config.features` resolves every feature to enabled, matching existing behavior exactly — no consumer-visible change without opting in. Covered by `src/lib/utils/features.test.ts` and two new Storybook stories exercising real browser behavior in Chromium: "Restricted features" (Element-menu popover) and "Inline formatting gated" (native Cmd/Ctrl+B swallowed + Selection-menu Bold/Italic hidden while Link stays visible).
 
 ### Fixed
 
