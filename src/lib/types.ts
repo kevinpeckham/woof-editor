@@ -8,6 +8,28 @@ export type EditorConfig = {
 	 * fast typing. Default 250.
 	 */
 	serializeDebounceMs?: number;
+	/** Creation gating — see `FeatureConfig`. */
+	features?: FeatureConfig;
+};
+
+/**
+ * Creation gating — restricts what the editor UI and paste can CREATE.
+ * Seeded content is not filtered; see README.
+ */
+export type FeatureConfig = {
+	/** true = all levels; array = only these levels offered. Default true. */
+	headings?: boolean | (1 | 2 | 3 | 4 | 5 | 6)[];
+	bold?: boolean;
+	italic?: boolean;
+	/** Gates both ordered and unordered lists. */
+	lists?: boolean;
+	links?: boolean;
+	blockquote?: boolean;
+	codeBlock?: boolean;
+	strikethrough?: boolean;
+	footnotes?: boolean;
+	images?: boolean;
+	tables?: boolean;
 };
 
 /**

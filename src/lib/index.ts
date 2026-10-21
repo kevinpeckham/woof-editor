@@ -40,4 +40,12 @@ export {
 } from "./actions/dom";
 export { default as MarkdownEditor } from "./MarkdownEditor.svelte";
 export { MarkdownEditorState } from "./state/editor.svelte";
-export type { EditorConfig, EditorSnapshot, LinkPreview, SanitizeSchema } from "./types";
+export type {
+	EditorConfig,
+	EditorSnapshot,
+	FeatureConfig,
+	LinkPreview,
+	SanitizeSchema,
+} from "./types";
+export type { ResolvedFeatures } from "./utils/features";
+export { resolveFeatures } from "./utils/features";
