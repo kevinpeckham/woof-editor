@@ -4,6 +4,8 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-21 — Configurable feature set (creation gating)
+
 ### Added
 
 - **Creation-gating via `config.features`.** New `FeatureConfig` type (`headings`, `bold`, `italic`, `lists`, `links`, `blockquote`, `codeBlock`, `strikethrough`, `footnotes`, `images`, `tables`) restricts what the editor's menus, keyboard shortcuts, and paste can CREATE — requested by `lightning-jar/replicator`. Every field defaults to `true` (today's unrestricted behavior); `headings` additionally accepts an array of levels (`1`–`6`) to offer only a subset. Gating also now covers the browser's own native Cmd/Ctrl+B and Cmd/Ctrl+I contenteditable formatting shortcuts — previously these bypassed `bold: false`/`italic: false` entirely by falling through to the browser default (inserting `<b>`/`<i>` directly); `handleContainerKeyDown` now swallows the chord when the corresponding feature is disabled. New exports: `FeatureConfig` / `ResolvedFeatures` types and `resolveFeatures(config?: FeatureConfig): ResolvedFeatures` (`src/lib/utils/features.ts`), plumbed through the new `config.features` field on `EditorConfig`.
@@ -25,7 +27,7 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ### Fixed
 
-- **README menu-list drift.** The Menus section claimed the Selection menu offers a "strikethrough" button and the Element menu offers "insert paragraph before/after" — neither has ever existed in the published package (no menu or shortcut creates strikethrough; inserting a paragraph before/after is Context-menu-only). Corrected both menu item lists against the actual components, and refreshed the Development section's test counts to the current 86 unit + 5 storybook = 91 total (previously documented as 71 + 4 = 75, stale before this work even started).
+- **README menu-list drift.** The Menus section claimed the Selection menu offers a "strikethrough" button and the Element menu offers "insert paragraph before/after" — neither has ever existed in the published package (no menu or shortcut creates strikethrough; inserting a paragraph before/after is Context-menu-only). Corrected both menu item lists against the actual components, and refreshed the Development section's test counts to the current 86 unit + 6 storybook = 92 total as of this release (previously documented as 71 + 4 = 75, stale before this work even started).
 
 ## [0.2.1] — 2026-07-28 — isomorphic-dompurify 3.x compatibility
 
