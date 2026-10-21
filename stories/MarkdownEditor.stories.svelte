@@ -1,6 +1,6 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import MarkdownEditor from "../src/lib/MarkdownEditor.svelte";
 import { MarkdownEditorState } from "../src/lib/state/editor.svelte";
@@ -65,6 +65,84 @@ async function playUndoWithinDebounce({ canvasElement }: { canvasElement: HTMLEl
 		expect(body.querySelector("p")?.textContent).toBe("hello");
 	});
 }
+
+/**
+ * Regression test pinning creation-gating's effect on the element menu
+ * (gutter-chip popover), using replicator's exact restricted subset:
+ * `{ blockquote: false, codeBlock: false, strikethrough: false,
+ * footnotes: false, images: false, tables: false }` (bold/italic/links/
+ * lists/headings are left at their defaults — enabled).
+ *
+ * `ElementMenu` filters its "Change type" submenu through
+ * `convertibleTagsFor(features)` and gates "Add footnote" on
+ * `features.footnotes` (see `src/lib/menus/ElementMenu.svelte` and
+ * `src/lib/utils/features.ts`). This story exercises the real popover in a
+ * real browser (not a unit test against the filter function) so a future
+ * change to the menu's markup — e.g. a gate accidentally dropped, or an
+ * item moved outside its `{#if}` — fails here even if the pure-function
+ * tests still pass.
+ */
+async function playRestrictedFeatures({ canvasElement }: { canvasElement: HTMLElement }) {
+	const body = canvasElement.querySelector<HTMLElement>(".woof-editor-body");
+	if (!body) throw new Error("contenteditable body not found");
+
+	// Seeding happens in a post-mount effect.
+	await waitFor(() => {
+		expect(body.querySelector("p")?.textContent).toBe("A paragraph to click into.");
+	});
+	const paragraph = body.querySelector("p");
+	if (!paragraph) throw new Error("paragraph not found");
+
+	// Click into the paragraph to place the caret. The gutter chip only
+	// mounts once `activeBlock` is tracked via `selectionchange`.
+	await userEvent.click(paragraph);
+
+	await waitFor(() => {
+		expect(canvasElement.querySelector(".woof-gutter-btn")).toBeTruthy();
+	});
+	const gutterButton = canvasElement.querySelector<HTMLButtonElement>(".woof-gutter-btn");
+	if (!gutterButton) throw new Error("gutter button not found");
+	await userEvent.click(gutterButton);
+
+	// `ElementMenu` renders into a native `popover` element that is a
+	// template-level sibling of the editor shell, not nested inside it —
+	// query the document (scoped to the open popover, since all three
+	// menus share the same backdrop/panel class names) rather than
+	// canvasElement or the editor container.
+	await waitFor(() => {
+		expect(document.querySelector(".woof-menu-backdrop:popover-open")).toBeTruthy();
+	});
+	const menuBackdrop = document.querySelector<HTMLElement>(".woof-menu-backdrop:popover-open");
+	if (!menuBackdrop) throw new Error("element menu not open");
+	const menu = within(menuBackdrop);
+
+	// Open the "Change type" submenu.
+	const changeType = await menu.findByText("Change type");
+	await userEvent.click(changeType);
+
+	// Positive assertions first — an empty/unopened menu can't pass these,
+	// so the negative assertions below aren't vacuous.
+	expect(await menu.findByText("Paragraph")).toBeTruthy();
+	expect(menu.getByText("Heading 2")).toBeTruthy();
+	expect(menu.getByText("Bulleted list")).toBeTruthy();
+
+	// Gated-off block types never render as submenu options.
+	expect(menu.queryByText("Blockquote")).toBeNull();
+	expect(menu.queryByText("Code block")).toBeNull();
+
+	// Footnotes are gated off entirely — the item doesn't render at all.
+	expect(menu.queryByText("Add footnote")).toBeNull();
+
+	// Guard against over-gating regressions: this config leaves bold
+	// enabled, so "Bold whole block" must still render.
+	expect(menu.getByText("Bold whole block")).toBeTruthy();
+
+	await userEvent.keyboard("{Escape}");
+
+	await waitFor(() => {
+		expect(document.querySelector(".woof-menu-backdrop:popover-open")).toBeNull();
+	});
+}
 </script>
 
 {#snippet editorTemplate(initialMd: string, serializeDebounceMs = 250)}
@@ -74,6 +152,33 @@ async function playUndoWithinDebounce({ canvasElement }: { canvasElement: HTMLEl
 		<div style="margin-top: 1rem; padding: 0.75rem; background: #f5f5f5; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.75rem; white-space: pre-wrap;">
 			<strong style="font-family: system-ui;">Serialized markdown (updates on edit):</strong>{"\n"}{editor.markdownCurrent}
 		</div>
+	</div>
+{/snippet}
+
+{#snippet restrictedFeaturesTemplate()}
+	{@const editor = new MarkdownEditorState({
+		markdown: `# Title
+
+A paragraph to click into.
+
+- Item one
+- Item two
+`,
+	})}
+	<div style="max-width: 720px; margin: 1rem auto; padding-left: 48px;">
+		<MarkdownEditor
+			{editor}
+			config={{
+				features: {
+					blockquote: false,
+					codeBlock: false,
+					footnotes: false,
+					images: false,
+					strikethrough: false,
+					tables: false,
+				},
+			}}
+		/>
 	</div>
 {/snippet}
 
@@ -117,4 +222,8 @@ Editors get in-text footnote refs[^1] that round-trip to markdown.
 
 <Story name="Undo within debounce window" asChild play={playUndoWithinDebounce}>
 	{@render editorTemplate("# Title\n\nhello", 5000)}
+</Story>
+
+<Story name="Restricted features" asChild play={playRestrictedFeatures}>
+	{@render restrictedFeaturesTemplate()}
 </Story>
