@@ -4,6 +4,29 @@ Notable changes to `@kevinpeckham/woof-editor`. The format follows [Keep a Chang
 
 ## [Unreleased]
 
+### Added
+
+- **Creation-gating via `config.features`.** New `FeatureConfig` type (`headings`, `bold`, `italic`, `lists`, `links`, `blockquote`, `codeBlock`, `strikethrough`, `footnotes`, `images`, `tables`) restricts what the editor's menus, keyboard shortcuts, and paste can CREATE — requested by `lightning-jar/replicator`. Every field defaults to `true` (today's unrestricted behavior); `headings` additionally accepts an array of levels (`1`–`6`) to offer only a subset. New exports: `FeatureConfig` / `ResolvedFeatures` types and `resolveFeatures(config?: FeatureConfig): ResolvedFeatures` (`src/lib/utils/features.ts`), plumbed through the new `config.features` field on `EditorConfig`.
+
+  ```ts
+  config={{
+    features: {
+      blockquote: false,
+      codeBlock: false,
+      footnotes: false,
+      images: false,
+      strikethrough: false,
+      tables: false,
+    },
+  }}
+  ```
+
+  Gating is creation-only: seeded markdown (`new MarkdownEditorState({ markdown })` / `hydrateMarkdown()`) is never filtered by `features` — only the menus/shortcuts and paste consult it. DOM primitives re-exported from the package root (`changeBlockType`, `toggleInlineEmphasisOnSelection`, etc.) remain ungated by design. Backward-compatible: omitting `config.features` resolves every feature to enabled, matching existing behavior exactly — no consumer-visible change without opting in. Covered by `src/lib/utils/features.test.ts` and a new "Restricted features" Storybook story exercising the real Element-menu popover in Chromium.
+
+### Fixed
+
+- **README menu-list drift.** The Menus section claimed the Selection menu offers a "strikethrough" button and the Element menu offers "insert paragraph before/after" — neither has ever existed in the published package (no menu or shortcut creates strikethrough; inserting a paragraph before/after is Context-menu-only). Corrected both menu item lists against the actual components, and refreshed the Development section's test counts to the current 86 unit + 5 storybook = 91 total (previously documented as 71 + 4 = 75, stale before this work even started).
+
 ## [0.2.1] — 2026-07-28 — isomorphic-dompurify 3.x compatibility
 
 ### Added

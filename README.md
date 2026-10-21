@@ -79,11 +79,77 @@ The component owns a contenteditable surface. Every DOM mutation triggers a debo
   config?: {
     /** Debounce (ms) for DOM-mutation → markdown-serialization. Default 250. */
     serializeDebounceMs?: number;
+    /** Creation gating — restricts what the menus/shortcuts/paste can create. See "Restricting features". */
+    features?: FeatureConfig;
   };
 }
 ```
 
-`SanitizeSchema` and `LinkPreview` are exported from the package root alongside `MarkdownEditor` and `MarkdownEditorState`.
+`SanitizeSchema`, `LinkPreview`, and `FeatureConfig` are exported from the package root alongside `MarkdownEditor` and `MarkdownEditorState`.
+
+## Restricting features
+
+`config.features` restricts what the editor's menus, keyboard shortcuts, and paste can **create** — e.g. a consumer that doesn't want authors introducing new tables or images through this editor. Every field defaults to `true` (fully enabled); pass `false` to disable a feature, or (for `headings`) an array to offer only specific levels.
+
+```ts
+export type FeatureConfig = {
+  headings?: boolean | (1 | 2 | 3 | 4 | 5 | 6)[];
+  bold?: boolean;
+  italic?: boolean;
+  lists?: boolean;      // gates both bulleted and numbered lists
+  links?: boolean;
+  blockquote?: boolean;
+  codeBlock?: boolean;
+  strikethrough?: boolean;
+  footnotes?: boolean;
+  images?: boolean;
+  tables?: boolean;
+};
+```
+
+| Field | Default | What it gates | Entry paths it restricts |
+|---|---|---|---|
+| `headings` | `true` (levels 1–6) | Which heading levels can be created | Element/Selection/Context menu's block-type submenu (offers H1–H4 only — see below), `Cmd/Ctrl+Alt+2/3/4` shortcuts, paste |
+| `bold` | `true` | Bold creation | Element/Selection/Context menu's Bold button(s), paste |
+| `italic` | `true` | Italic creation | Element/Selection/Context menu's Italic button(s), paste |
+| `lists` | `true` | Bulleted + numbered list creation | block-type submenu, paste |
+| `links` | `true` | Link creation | Selection/Context menu's Link/Unlink button, paste |
+| `blockquote` | `true` | Blockquote creation | block-type submenu, paste |
+| `codeBlock` | `true` | Code-block (`pre`) creation — inline `` `code` `` is a separate construct and is never gated | block-type submenu's "Code block" entry, paste |
+| `strikethrough` | `true` | Strikethrough creation | paste only — no menu button or shortcut creates strikethrough today |
+| `footnotes` | `true` | Footnote creation | Element/Context menu's "Add footnote" (not offered on the Selection menu), paste |
+| `images` | `true` | Image creation | paste only — no menu button creates images today |
+| `tables` | `true` | Table creation | paste only — no menu button creates tables today |
+
+`headings` accepts `true`, `false`, or an array of levels (`1`–`6`). The block-type submenu only ever offers H1–H4 (there's no menu entry for H5/H6 regardless of gating — `CONVERTIBLE_TAGS_LIST` caps at H4), so restricting to e.g. `[5, 6]` only affects paste. Levels outside `1`–`6` in the array (e.g. `7`) are accepted but inert — nothing reads them.
+
+A heading shortcut for a disabled level (e.g. `Cmd/Ctrl+Alt+3` with `headings: [1, 2]`) is swallowed (`preventDefault`) rather than falling through to inserting the literal keystroke — the chord stays reserved-but-inert, same as its behavior on layouts where the chord doesn't resolve to a block-type key at all.
+
+A realistic restricted config (this is the exact subset exercised by `src/lib/utils/features.test.ts`'s "replicator's restricted set" and the Storybook "Restricted features" story):
+
+```svelte
+<MarkdownEditor
+  {editor}
+  config={{
+    features: {
+      blockquote: false,
+      codeBlock: false,
+      footnotes: false,
+      images: false,
+      strikethrough: false,
+      tables: false,
+    },
+  }}
+/>
+```
+
+`resolveFeatures(config?: FeatureConfig): ResolvedFeatures` (also exported from the package root) is the pure function that applies the defaults above — useful if you're building a custom toolbar and want the same resolved state the built-in menus use.
+
+Three things worth being precise about:
+
+1. **Gating restricts creation, not display.** It governs what the menus, keyboard shortcuts, and paste can *create* new instances of. It does not filter content you seed the editor with (`new MarkdownEditorState({ markdown })` / `editor.hydrateMarkdown()` / `editor.markdownCurrent` assignment) — a document that already contains a table or an H1 renders and is fully editable/deletable even with `tables: false` or `headings: false`. If you need to filter what the editor will *display* (not just what it can create), use the `sanitize` prop — that's an input filter, independent of `features`.
+2. **The DOM primitives re-exported from the package root (`changeBlockType`, `toggleInlineEmphasisOnSelection`, `insertFootnote`, etc.) are ungated by design.** `features` only constrains the built-in `<MarkdownEditor>` menus/shortcuts/paste; if you call a primitive directly to build your own toolbar button, it does whatever you tell it to, regardless of `config.features`.
+3. **There is no markdown autoformat in this editor** (no "typing `**bold**` converts live" behavior) — all creation happens through the menus, the keyboard shortcuts above, or paste. `strikethrough`, `images`, and `tables` currently have no menu button or shortcut at all (see table above), so for those three fields gating only has an effect on paste.
 
 ## What's in the box
 
@@ -284,9 +350,9 @@ Undo/redo re-seed the whole surface from the state class's history (the same imp
 
 The WYSIWYG surface auto-mounts five internal menus:
 
-- **Element menu** — click the ⋮ button that appears next to the active block. Change block type (paragraph, headings, list, blockquote, code block), toggle bold/italic/strikethrough on the whole block, insert paragraph before/after, delete. The first `<h1>` in the container is protected — the "Delete" and "Change type" actions are disabled on it. That gates the "article title" convention if your consumer relies on it.
-- **Selection menu** — appears when text is selected. Bold, italic, strikethrough, link, unlink, footnote.
-- **Context menu** — right-click. Combines the element + selection actions, plus "Paste as plain text" (see Sanitization).
+- **Element menu** — click the ⋮ button that appears next to the active block. Change block type (paragraph, H1–H4, blockquote, bulleted/numbered list, code block), toggle bold/italic on the whole block, add footnote, delete block. The first `<h1>` in the container is protected — the "Delete" and "Change type" actions are disabled on it. That gates the "article title" convention if your consumer relies on it.
+- **Selection menu** — appears when text is selected. Bold, italic, link/unlink; when the selection exactly spans one whole block, an additional "Type" submenu offers converting that block (same options as the Element menu's change-type submenu).
+- **Context menu** — right-click. Combines the element + selection actions (bold/italic selection or whole block, change type, link/unlink, add footnote, delete), plus "Insert paragraph before/after" (not feature-gated) and "Paste as plain text" (see Sanitization).
 - **Link popover** — click any anchor to edit its URL, remove the link, or open it — plus an optional rich preview (see Link previews).
 - **Footnote editor** — click the number of a footnote ref to edit its definition inline.
 
@@ -313,7 +379,7 @@ bun run build:site      # prerendered static demo page (adapter-static), output 
 bun run preview:site    # serve that build locally for a final check
 ```
 
-`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (71 tests over the state class + DOM primitives + sanitize config, including a drift check against the installed `dompurify`'s vendored profile lists) and a `storybook` project that drives the 4 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (75 tests total). Both run in CI.
+`bun run test` runs both vitest projects defined in `vite.config.ts`: a node-only `unit` project (86 tests over the state class + DOM primitives + feature-resolution logic + sanitize config, including a drift check against the installed `dompurify`'s vendored profile lists) and a `storybook` project that drives the 5 stories in `stories/MarkdownEditor.stories.svelte` through Chromium via `@storybook/addon-vitest`'s `storybookTest` (91 tests total). Both run in CI.
 
 ## Known limitations
 
