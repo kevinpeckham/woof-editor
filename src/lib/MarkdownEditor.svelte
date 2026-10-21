@@ -30,6 +30,7 @@ import LinkPopover from "./menus/LinkPopover.svelte";
 import SelectionMenu from "./menus/SelectionMenu.svelte";
 import type { MarkdownEditorState } from "./state/editor.svelte";
 import type { EditorConfig, LinkPreview, SanitizeSchema } from "./types";
+import { pasteForbidTagsFor, resolveFeatures } from "./utils/features";
 import { buildSanitizeConfig } from "./utils/sanitize";
 
 /**
@@ -76,6 +77,12 @@ let {
 } = $props();
 
 const debounceMs = $derived(config?.serializeDebounceMs ?? 250);
+
+// Creation-gating: which tags paste-sanitization must additionally forbid,
+// derived from `config.features`. Seeded content does NOT consume this —
+// see `seedFromMarkdown`'s comment for why.
+const features = $derived(resolveFeatures(config?.features));
+const pasteForbids = $derived(pasteForbidTagsFor(features));
 
 let shellRef: HTMLDivElement | null = $state(null);
 let containerRef: HTMLDivElement | null = $state(null);
@@ -177,18 +184,29 @@ let footnoteState = $state<{
 	y: 0,
 });
 
-// Sanitization config for the markdown seed path and the paste path.
+// Sanitization for the markdown seed path and the paste path.
 // `buildSanitizeConfig` overlays the consumer's `sanitize` schema onto the
 // default — see src/lib/utils/sanitize.ts for why that merge can't be a
 // plain spread (USE_PROFILES overrides ALLOWED_TAGS/ALLOWED_ATTR).
-function sanitizeHtml(raw: string): string {
+//
+// The two paths deliberately diverge on `config.features`: seeded content
+// is the consumer's own saved document (loaded via `editor.markdownCurrent`
+// from their storage), not something a reader is creating through this UI —
+// feature gating restricts what the editor can CREATE, not what it can
+// display. So `sanitizeSeedHtml` never receives the paste-forbid tags;
+// `sanitizePastedHtml` does.
+function sanitizeSeedHtml(raw: string): string {
 	return DOMPurify.sanitize(raw, buildSanitizeConfig(sanitize));
+}
+
+function sanitizePastedHtml(raw: string): string {
+	return DOMPurify.sanitize(raw, buildSanitizeConfig(sanitize, pasteForbids));
 }
 
 function seedFromMarkdown(md: string) {
 	if (!containerRef) return;
 	const rawHtml = toDom(md);
-	const clean = sanitizeHtml(rawHtml);
+	const clean = sanitizeSeedHtml(rawHtml);
 	containerRef.innerHTML = clean;
 	// Loading fresh content invalidates the tracked block.
 	activeBlock = null;
@@ -246,7 +264,7 @@ function handlePaste(e: ClipboardEvent) {
 	if (!html && !text) return;
 	e.preventDefault();
 	if (html) {
-		const clean = sanitizeHtml(html);
+		const clean = sanitizePastedHtml(html);
 		if (insertSanitizedHtmlAtSelection(clean, containerRef)) {
 			scheduleFlush();
 			return;

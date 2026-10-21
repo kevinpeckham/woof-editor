@@ -220,3 +220,25 @@ describe("buildSanitizeConfig — single-dimension schemas pin the other to the 
 		expect(clean).toContain('title="t"');
 	});
 });
+
+describe("buildSanitizeConfig — extraForbidTags (feature gating)", () => {
+	test("extra forbids merge with schema forbids", () => {
+		const config = buildSanitizeConfig({ FORBID_TAGS: ["em"] }, ["blockquote", "pre"]);
+		expect(config.FORBID_TAGS).toEqual(expect.arrayContaining(["em", "blockquote", "pre"]));
+	});
+
+	test("behavioral: feature-forbidden blockquote and pre are stripped on paste config", () => {
+		const config = buildSanitizeConfig(undefined, ["blockquote", "pre"]);
+		const out = DOMPurify.sanitize(
+			"<blockquote><p>q</p></blockquote><pre><code>x</code></pre><p>keep</p>",
+			config,
+		);
+		expect(out).not.toContain("<blockquote");
+		expect(out).not.toContain("<pre");
+		expect(out).toContain("<p>keep</p>");
+	});
+
+	test("no extra forbids → config unchanged from today", () => {
+		expect(buildSanitizeConfig(undefined, [])).toEqual(buildSanitizeConfig(undefined));
+	});
+});

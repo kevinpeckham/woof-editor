@@ -337,10 +337,22 @@ export type SanitizeConfig = {
  *   forbids subtract from it, so there is nothing to override.
  * - `ADD_ATTR` is always present — it is additive under any shape.
  *
+ * `extraForbidTags` is a second, independent source of `FORBID_TAGS`
+ * entries — unioned with whatever the schema itself provides. It exists for
+ * creation-gating (see `src/lib/utils/features.ts`'s `pasteForbidTagsFor`):
+ * the paste path forbids tags for features the consumer has disabled,
+ * on top of (not instead of) any `sanitize.FORBID_TAGS` the consumer passed.
+ * Absent or empty, this parameter changes nothing — the returned config is
+ * identical to calling `buildSanitizeConfig(schema)` alone, and the
+ * `USE_PROFILES` / html-profile-pinning logic above is untouched by it.
+ *
  * Pure: returns a fresh object (and fresh arrays) on every call, so callers
  * can hand it to DOMPurify without aliasing the module-level default.
  */
-export function buildSanitizeConfig(schema?: SanitizeSchema): SanitizeConfig {
+export function buildSanitizeConfig(
+	schema?: SanitizeSchema,
+	extraForbidTags?: readonly string[],
+): SanitizeConfig {
 	const config: SanitizeConfig = { ADD_ATTR: [...DEFAULT_SANITIZE.ADD_ATTR] };
 
 	const hasTags = schema?.ALLOWED_TAGS !== undefined;
@@ -348,16 +360,20 @@ export function buildSanitizeConfig(schema?: SanitizeSchema): SanitizeConfig {
 	const replacesProfile = hasTags || hasAttr;
 	if (!replacesProfile) config.USE_PROFILES = { ...DEFAULT_SANITIZE.USE_PROFILES };
 
-	if (!schema) return config;
+	if (schema) {
+		if (schema.ALLOWED_TAGS) config.ALLOWED_TAGS = [...schema.ALLOWED_TAGS];
+		else if (hasAttr) config.ALLOWED_TAGS = [...HTML_PROFILE_TAGS];
 
-	if (schema.ALLOWED_TAGS) config.ALLOWED_TAGS = [...schema.ALLOWED_TAGS];
-	else if (hasAttr) config.ALLOWED_TAGS = [...HTML_PROFILE_TAGS];
+		if (schema.ALLOWED_ATTR) config.ALLOWED_ATTR = [...schema.ALLOWED_ATTR];
+		else if (hasTags) config.ALLOWED_ATTR = [...HTML_PROFILE_ATTRS];
 
-	if (schema.ALLOWED_ATTR) config.ALLOWED_ATTR = [...schema.ALLOWED_ATTR];
-	else if (hasTags) config.ALLOWED_ATTR = [...HTML_PROFILE_ATTRS];
+		if (schema.FORBID_TAGS) config.FORBID_TAGS = [...schema.FORBID_TAGS];
+		if (schema.FORBID_ATTR) config.FORBID_ATTR = [...schema.FORBID_ATTR];
+	}
 
-	if (schema.FORBID_TAGS) config.FORBID_TAGS = [...schema.FORBID_TAGS];
-	if (schema.FORBID_ATTR) config.FORBID_ATTR = [...schema.FORBID_ATTR];
+	if (extraForbidTags && extraForbidTags.length > 0) {
+		config.FORBID_TAGS = [...new Set([...(config.FORBID_TAGS ?? []), ...extraForbidTags])];
+	}
 
 	return config;
 }
