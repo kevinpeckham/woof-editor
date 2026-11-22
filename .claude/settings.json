@@ -1,0 +1,14 @@
+{
+	"enabledPlugins": {
+		"playwright@claude-plugins-official": true,
+		"svelte@svelte": true
+	},
+	"extraKnownMarketplaces": {
+		"svelte": {
+			"source": {
+				"repo": "sveltejs/ai-tools",
+				"source": "github"
+			}
+		}
+	}
+}
