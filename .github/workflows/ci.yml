@@ -76,3 +76,28 @@ jobs:
         run: bun run build
       - name: demo site build
         run: bun run build:site
+
+  # Advisory. Fallow reads the files a pull request changes for dead code,
+  # duplication and complexity; what it finds shows in this job's log. The
+  # step never fails the run: the gates are the jobs above.
+  fallow:
+    name: fallow audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Fallow compares with the branch the pull request targets.
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: fallow audit
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bunx fallow audit --base "origin/$BASE_REF"
+        continue-on-error: true
+
